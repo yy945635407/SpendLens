@@ -1,0 +1,7 @@
+flask>=3.0
+flask-cors>=4.0
+openpyxl>=3.1
+matplotlib>=3.8
+numpy>=1.26
+python-pptx>=0.6
+fpdf2>=2.7

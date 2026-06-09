@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual env
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (keep sample, ignore user uploads)
+data/*.xlsx
+data/*.xls
+!data/sample.xlsx
+
+# Generated files
+shares/*.json
+shares/*.png
+static/charts/*.png
+
+# Env
+.env
+.env.local
+
+# Large binary files (PPT/PDF outputs from tests)
+*.pptx
+*.pdf
+
+# Node (if any later)
+node_modules/

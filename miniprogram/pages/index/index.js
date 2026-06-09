@@ -1,0 +1,358 @@
+const app = getApp();
+const { request, uploadFile, downloadFile } = require('../../utils/api');
+const { fmtMoney, fmtInt, fmtPct } = require('../../utils/format');
+
+Page({
+  data: {
+    // 状态
+    hasFile: false,
+    fileName: '',
+    fileSize: '',
+    loading: false,
+    tabActive: 'overview',  // overview | budget | rules | simulate
+
+    // 分析数据
+    analysisData: null,
+    cacheId: null,
+    healthScore: null,
+    healthGrade: '',
+    healthText: '',
+    healthColor: '#7BC8A4',
+    stats: [],
+    categories: [],
+    budgetComparison: null,
+
+    // 图表
+    chartPieUrl: '',
+    chartFoodUrl: '',
+    chartWeeklyUrl: '',
+    chartIncomeUrl: '',
+    chartAccountUrl: '',
+    chartHeatmapUrl: '',
+    chartBudgetUrl: '',
+
+    // 预算
+    budgetTotal: 8000,
+    budgetCats: [],
+
+    // 规则
+    rules: [],
+
+    // 模拟
+    simCards: [
+      { title:'🍔 减少外卖 50%', desc:'若外卖支出减少一半', type:'reduce_category', category:'餐饮', by_pct:50 },
+      { title:'💰 储蓄率达 70%', desc:'需要减少多少支出', type:'target_savings_rate', target:70 },
+      { title:'📈 收入增加 10%', desc:'加薪/副业的影响', type:'increase_income', by_pct:10 },
+      { title:'🎯 储蓄率达 80%', desc:'FIRE 级别储蓄率', type:'target_savings_rate', target:80 }
+    ],
+    simResult: null,
+    simType: 'reduce_category',
+    simCat: '',
+    simPct: 20
+  },
+
+  onLoad() {
+    this.loadBudgetConfig();
+    this.loadRules();
+  },
+
+  onShareAppMessage() {
+    return {
+      title: 'SpendLens · 家庭账单智能分析',
+      path: '/pages/index/index'
+    };
+  },
+
+  // ============ 文件上传 ============
+  chooseFile() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['xlsx', 'xls'],
+      success: (res) => {
+        const file = res.tempFiles[0];
+        this.setData({
+          hasFile: true,
+          fileName: file.name,
+          fileSize: (file.size / 1024).toFixed(1) + ' KB'
+        });
+        this.runAnalysis(file.path);
+      },
+      fail: () => {
+        wx.showToast({ title: '请选择 .xlsx 或 .xls 文件', icon: 'none' });
+      }
+    });
+  },
+
+  // ============ 分析 ============
+  async runAnalysis(filePath) {
+    this.setData({ loading: true });
+
+    try {
+      const result = await uploadFile(filePath);
+      const d = result.data;
+      app.globalData.analysisData = d;
+      app.globalData.cacheId = result.cache_id;
+
+      this.setData({
+        loading: false,
+        analysisData: d,
+        cacheId: result.cache_id,
+        healthScore: d.health ? d.health.score + '分' : '--',
+        healthGrade: d.health ? d.health.grade + ' · ' + d.health.grade_text : '',
+        healthText: d.health ? (d.health.suggestions || []).slice(0,2).join(' | ') : '',
+        healthColor: d.health?.color || '#7BC8A4',
+        stats: this.buildStats(d),
+        categories: this.buildCategories(d),
+        budgetComparison: d.budget_comparison,
+        tabActive: 'overview'
+      });
+
+      // 加载图表
+      this.loadCharts(result.cache_id);
+
+      wx.showToast({ title: '分析完成 ✅', icon: 'success' });
+    } catch (err) {
+      this.setData({ loading: false });
+      wx.showToast({ title: '分析失败: ' + err.message, icon: 'none', duration: 3000 });
+    }
+  },
+
+  buildStats(d) {
+    return [
+      { label:'💖 总收入', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4' },
+      { label:'🌸 总支出', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A' },
+      { label:'🎀 结余', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2' },
+      { label:'🍰 日均', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6' },
+      { label:'💕 最大类', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3' },
+      { label:'✨ 交易', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E' }
+    ];
+  },
+
+  buildCategories(d) {
+    const cc = ['#FF6B8A','#FF85A2','#FF9EBB','#FFB3C6','#FF7EB3','#FFD4B8','#C4909E','#E8A0B4'];
+    const maxC = (d.cat1_list[0] || [0,1])[1] || 1;
+    return (d.cat1_list || []).slice(0, 8).map((c, i) => ({
+      name: c[0],
+      amount: fmtMoney(c[1]),
+      pct: fmtPct(c[1] / d.total_expense * 100),
+      barW: (c[1] / maxC * 100).toFixed(0),
+      color: cc[i] || '#FF6B8A'
+    }));
+  },
+
+  // ============ 图表加载 ============
+  loadCharts(cacheId) {
+    const apiBase = app.globalData.apiBase;
+    const charts = {
+      chartPieUrl: 'pie_spending',
+      chartFoodUrl: 'bar_food',
+      chartWeeklyUrl: 'line_weekly',
+      chartIncomeUrl: 'doughnut_income',
+      chartAccountUrl: 'bar_account',
+      chartHeatmapUrl: 'heatmap',
+      chartBudgetUrl: 'budget_bar'
+    };
+    for (const [key, name] of Object.entries(charts)) {
+      this.setData({ [key]: `${apiBase}/chart/${cacheId}/${name}` });
+    }
+  },
+
+  // ============ 标签切换 ============
+  switchTab(e) {
+    this.setData({ tabActive: e.currentTarget.dataset.tab });
+  },
+
+  // ============ 预算 ============
+  async loadBudgetConfig() {
+    try {
+      const res = await request('/budget');
+      if (res.success) {
+        app.globalData.budgetConfig = res.budget;
+        this.setData({
+          budgetTotal: res.budget.monthly_total || 8000,
+          budgetCats: Object.entries(res.budget.categories || {}).map(([k,v]) => ({ name: k, amount: v }))
+        });
+      }
+    } catch (e) { /* use defaults */ }
+  },
+
+  onBudgetTotalChange(e) {
+    this.setData({ budgetTotal: parseInt(e.detail.value) || 0 });
+  },
+
+  onBudgetCatChange(e) {
+    const idx = e.currentTarget.dataset.idx;
+    const cats = this.data.budgetCats;
+    cats[idx].amount = parseInt(e.detail.value) || 0;
+    this.setData({ budgetCats: cats });
+  },
+
+  addBudgetCat() {
+    wx.showModal({
+      title: '添加预算分类',
+      editable: true,
+      placeholderText: '分类名称（如：餐饮）',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          const cats = this.data.budgetCats;
+          cats.push({ name: res.content, amount: 0 });
+          this.setData({ budgetCats: cats });
+        }
+      }
+    });
+  },
+
+  removeBudgetCat(e) {
+    const idx = e.currentTarget.dataset.idx;
+    const cats = this.data.budgetCats;
+    cats.splice(idx, 1);
+    this.setData({ budgetCats: cats });
+  },
+
+  async saveBudget() {
+    const cfg = {
+      monthly_total: this.data.budgetTotal,
+      categories: {}
+    };
+    this.data.budgetCats.forEach(c => { cfg.categories[c.name] = c.amount; });
+    try {
+      await request('/budget', { method: 'POST', data: cfg });
+      app.globalData.budgetConfig = cfg;
+      wx.showToast({ title: '预算已保存 ✅', icon: 'success' });
+    } catch (e) {
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    }
+  },
+
+  // ============ 规则 ============
+  async loadRules() {
+    try {
+      const res = await request('/rules');
+      if (res.success) {
+        app.globalData.autoRules = res.rules;
+        this.setData({ rules: res.rules.map(r => ({
+          ...r,
+          desc: `如果 ${r.field} ${r.op} "${r.value}" → 🏷️ ${r.set_tag}`
+        }))});
+      }
+    } catch (e) { /* */ }
+  },
+
+  async addRule(e) {
+    // 简化：用表单输入
+    wx.showModal({
+      title: '添加规则',
+      editable: true,
+      placeholderText: '格式：备注 包含 外卖 → 标签名',
+      success: async (res) => {
+        if (res.confirm && res.content) {
+          const parts = res.content.split(/\s+/);
+          if (parts.length >= 4) {
+            const rule = {
+              id: Date.now(),
+              field: parts[0] || 'note',
+              op: parts[1] || 'contains',
+              value: parts[2] || '',
+              set_tag: parts[3] || ''
+            };
+            app.globalData.autoRules.push(rule);
+            try {
+              await request('/rules', { method:'POST', data: app.globalData.autoRules });
+              this.loadRules();
+              wx.showToast({ title: '规则已添加 ✅', icon: 'success' });
+            } catch (e) {
+              wx.showToast({ title: '保存失败', icon: 'none' });
+            }
+          } else {
+            wx.showToast({ title: '格式错误：备注 包含 关键词 标签名', icon: 'none' });
+          }
+        }
+      }
+    });
+  },
+
+  async deleteRule(e) {
+    const idx = e.currentTarget.dataset.idx;
+    app.globalData.autoRules.splice(idx, 1);
+    try {
+      await request('/rules', { method:'POST', data: app.globalData.autoRules });
+      this.loadRules();
+      wx.showToast({ title: '规则已删除 ✅', icon: 'success' });
+    } catch (e) {
+      wx.showToast({ title: '删除失败', icon: 'none' });
+    }
+  },
+
+  // ============ 模拟 ============
+  runSimPreset(e) {
+    const preset = e.currentTarget.dataset.preset;
+    this.doSimulate(preset.type, preset.category || '', preset.by_pct || preset.target || 0);
+  },
+
+  async doSimulate(type, category, pct) {
+    const d = this.data.analysisData;
+    if (!d) { wx.showToast({ title: '请先上传账单', icon: 'none' }); return; }
+    try {
+      const res = await request('/simulate', {
+        method: 'POST',
+        data: { file_data: d, scenario: { type, by_pct: pct, category, target: pct } }
+      });
+      if (res.success) {
+        this.setData({ simResult: res.result });
+      } else {
+        wx.showToast({ title: res.result?.error || '模拟失败', icon: 'none' });
+      }
+    } catch (e) {
+      wx.showToast({ title: '模拟失败', icon: 'none' });
+    }
+  },
+
+  runCustomSim() {
+    const { simType, simCat, simPct } = this.data;
+    this.doSimulate(simType, simCat, simPct);
+  },
+
+  onSimTypeChange(e) { this.setData({ simType: e.detail.value }); },
+  onSimCatInput(e) { this.setData({ simCat: e.detail.value }); },
+  onSimPctInput(e) { this.setData({ simPct: parseFloat(e.detail.value) || 0 }); },
+
+  // ============ 导出 ============
+  generatePPT() {
+    if (!this.data.hasFile) return;
+    wx.showLoading({ title: '生成中...' });
+    // 因为 wx.uploadFile 已在上传时使用，这里简化：通过 analysis data + generate API
+    // 实际上需要重新上传文件或使用缓存的 filePath
+    wx.showToast({ title: '请在小程序外下载 PPT', icon: 'none' });
+    wx.hideLoading();
+  },
+
+  generatePDF() {
+    if (!this.data.cacheId) return;
+    wx.showLoading({ title: '生成 PDF...' });
+    const url = app.globalData.apiBase + '/generate-pdf';
+    // PDF 生成需要文件，简化处理
+    wx.showToast({ title: '请在网页版下载 PDF', icon: 'none' });
+    wx.hideLoading();
+  },
+
+  shareResult() {
+    if (!this.data.analysisData) return;
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
+  },
+
+  resetAll() {
+    this.setData({
+      hasFile: false, fileName: '', fileSize: '',
+      analysisData: null, cacheId: null,
+      healthScore: null, healthGrade: '', healthText: '',
+      stats: [], categories: [], budgetComparison: null,
+      chartPieUrl: '', chartFoodUrl: '', chartWeeklyUrl: '',
+      chartIncomeUrl: '', chartAccountUrl: '', chartHeatmapUrl: '', chartBudgetUrl: '',
+      simResult: null, tabActive: 'overview'
+    });
+  }
+});

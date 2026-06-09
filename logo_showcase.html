@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendLens — Bill + Lens Combined Logo Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink: #FF6B8A;
+            --dark: #5C2D3E;
+            --mint: #7BC8A4;
+            --gold: #FFD4B8;
+            --bg: #FFF0F5;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background: #FAFAFA;
+            color: #1A1A1A;
+            overflow-x: hidden;
+        }
+        .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+        html { scroll-behavior: smooth; }
+
+        .logo-card {
+            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .logo-card:hover { transform: translateY(-4px); }
+
+        .logo-canvas {
+            position: relative;
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .logo-aura {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle, rgba(255,107,138,0.25) 0%, transparent 70%);
+            border-radius: 50%; transform: scale(0.5); opacity: 0;
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+            filter: blur(40px); pointer-events: none;
+        }
+        .logo-card:hover .logo-aura { transform: scale(1); opacity: 1; }
+
+        .divider-line {
+            width: 0; height: 1px; background: #FF6B8A; opacity: 0.3;
+            transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .logo-card:hover .divider-line { width: 100%; }
+
+        .tracking-ultra-wide { letter-spacing: 0.2em; }
+        .text-balance { text-wrap: balance; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState } = React;
+        const PINK = '#FF6B8A';
+        const DARK = '#5C2D3E';
+        const MINT = '#7BC8A4';
+        const GOLD = '#FFD4B8';
+
+        // ─── V1: Yuanbao Lens ────────────────────────────────────
+        // Magnifying glass examining a yuanbao (gold ingot) — the ultimate money symbol
+        const Logo1_ReceiptGlass = ({color}) => (
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                {/* Lens frame */}
+                <circle cx="46" cy="40" r="19" fill="none" stroke={color} strokeWidth="3.2"/>
+                {/* ─── Yuanbao (元宝) ─── */}
+                {/* Main body — boat-shaped gold ingot */}
+                <path d="M 33 48
+                         C 33 54, 59 54, 59 48
+                         C 59 42, 57 38, 56 37
+                         C 54 35, 52 35, 51 38
+                         C 50 41, 49 43, 49 43
+                         C 49 35, 47 29, 46 28
+                         C 45 29, 43 35, 43 43
+                         C 43 43, 42 41, 41 38
+                         C 40 35, 38 35, 36 37
+                         C 35 38, 33 42, 33 48 Z"
+                      fill={color} opacity="0.85"/>
+                {/* Inner shine — a curved highlight on the center hump */}
+                <path d="M 44 34 C 45 31, 47 31, 48 34"
+                      fill="none" stroke="white" strokeWidth="1.3" strokeLinecap="round" opacity="0.5"/>
+                {/* Sparkle star — top right of yuanbao */}
+                <g stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.7">
+                    <line x1="53" y1="26" x2="53" y2="30"/>
+                    <line x1="51" y1="28" x2="55" y2="28"/>
+                </g>
+                {/* Tiny sparkle — top left */}
+                <g stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.45">
+                    <line x1="36" y1="25" x2="36" y2="28"/>
+                    <line x1="34.5" y1="26.5" x2="37.5" y2="26.5"/>
+                </g>
+                {/* Handle */}
+                <line x1="60" y1="54" x2="80" y2="76" stroke={color} strokeWidth="5.5" strokeLinecap="round"/>
+            </svg>
+        );
+
+        // ─── V2: Focus Receipt ────────────────────────────────────
+        // Scattered dots (unfocused bills) → sharp receipt lines (in focus)
+        const Logo2_FocusReceipt = ({color}) => (
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                {/* Lens frame — enlarged */}
+                <circle cx="48" cy="42" r="23" fill="none" stroke={color} strokeWidth="3.5"/>
+                {/* Scattered dots — unfocused, periphery */}
+                <g fill={color} opacity="0.2">
+                    <circle cx="28" cy="25" r="2.2"/><circle cx="34" cy="22" r="1.8"/>
+                    <circle cx="68" cy="28" r="2.0"/><circle cx="66" cy="22" r="1.5"/>
+                    <circle cx="26" cy="48" r="1.8"/><circle cx="30" cy="58" r="1.6"/>
+                    <circle cx="66" cy="54" r="1.9"/><circle cx="70" cy="44" r="1.7"/>
+                </g>
+                {/* Medium dots — transitioning */}
+                <g fill={color} opacity="0.45">
+                    <circle cx="36" cy="32" r="2.0"/><circle cx="60" cy="34" r="2.0"/>
+                    <circle cx="34" cy="42" r="2.1"/><circle cx="62" cy="42" r="2.1"/>
+                    <circle cx="38" cy="52" r="1.9"/><circle cx="58" cy="50" r="1.9"/>
+                </g>
+                {/* Sharp receipt lines — in focus at center */}
+                <g stroke={color} strokeWidth="2.4" strokeLinecap="round">
+                    <line x1="38" y1="36" x2="58" y2="36" opacity="0.85"/>
+                    <line x1="39" y1="42" x2="57" y2="42" opacity="0.65"/>
+                    <line x1="40" y1="48" x2="56" y2="48" opacity="0.5"/>
+                </g>
+                {/* Focal sparkle */}
+                <circle cx="48" cy="42" r="3.2" fill={color}/>
+                {/* Handle — enlarged */}
+                <line x1="65" y1="58" x2="87" y2="82" stroke={color} strokeWidth="6" strokeLinecap="round"/>
+            </svg>
+        );
+
+        // ─── V3: Coin Lens ────────────────────────────────────────
+        // Lens examining a coin with ¥, light rays converging
+        const Logo3_CoinLens = ({color}) => (
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                {/* Lens frame */}
+                <circle cx="45" cy="41" r="19" fill="none" stroke={color} strokeWidth="3.2"/>
+                {/* Light rays converging inward */}
+                <g stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.35">
+                    <line x1="28" y1="28" x2="38" y2="35"/>
+                    <line x1="62" y1="28" x2="52" y2="35"/>
+                    <line x1="26" y1="41" x2="36" y2="41"/>
+                    <line x1="64" y1="41" x2="54" y2="41"/>
+                    <line x1="28" y1="54" x2="38" y2="47"/>
+                    <line x1="62" y1="54" x2="52" y2="47"/>
+                </g>
+                {/* Coin — double circle */}
+                <circle cx="45" cy="41" r="9.5" fill="none" stroke={color} strokeWidth="2.5"/>
+                <circle cx="45" cy="41" r="7" fill="none" stroke={color} strokeWidth="1.2" opacity="0.5"/>
+                {/* ¥ symbol */}
+                <g stroke={color} strokeWidth="2" strokeLinecap="round">
+                    <line x1="42.5" y1="37.5" x2="47.5" y2="37.5"/>
+                    <line x1="42.5" y1="44.5" x2="47.5" y2="44.5"/>
+                    <line x1="45" y1="36" x2="45" y2="46"/>
+                </g>
+                {/* Handle */}
+                <line x1="59" y1="55" x2="80" y2="78" stroke={color} strokeWidth="5.5" strokeLinecap="round"/>
+            </svg>
+        );
+
+        // ─── V4: Receipt Handle ───────────────────────────────────
+        // Lens circle at top, receipt form IS the handle extending downward
+        const Logo4_ReceiptHandle = ({color}) => (
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                {/* Lens circle at top */}
+                <circle cx="50" cy="33" r="18" fill="none" stroke={color} strokeWidth="3.2"/>
+                {/* Inner detail — focal point */}
+                <circle cx="50" cy="33" r="3.5" fill={color}/>
+                <g stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.5">
+                    <line x1="37" y1="33" x2="44" y2="33"/>
+                    <line x1="56" y1="33" x2="63" y2="33"/>
+                    <line x1="50" y1="20" x2="50" y2="27"/>
+                    <line x1="50" y1="39" x2="50" y2="46"/>
+                </g>
+                {/* Receipt as handle — connected to lens bottom */}
+                <rect x="41" y="49" width="18" height="32" rx="4" fill="none" stroke={color} strokeWidth="2.8"/>
+                {/* Receipt lines */}
+                <g stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.55">
+                    <line x1="45" y1="56" x2="55" y2="56"/>
+                    <line x1="45" y1="61" x2="54" y2="61"/>
+                    <line x1="46" y1="66" x2="53" y2="66"/>
+                    <line x1="46" y1="71" x2="54" y2="71"/>
+                    <line x1="47" y1="76" x2="52" y2="76"/>
+                </g>
+                {/* Connection bridge */}
+                <rect x="47" y="47" width="6" height="4" rx="1.5" fill={color} opacity="0.6"/>
+            </svg>
+        );
+
+        // ─── V5: Card & Lens ──────────────────────────────────────
+        // A payment card/bill with a lens examining it
+        const Logo5_CardLens = ({color}) => (
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                {/* Payment card / bill — rounded rect */}
+                <rect x="28" y="32" width="44" height="30" rx="6" fill="none" stroke={color} strokeWidth="2.5"/>
+                {/* Card chip / category icon */}
+                <rect x="34" y="37" width="10" height="7" rx="2" fill={color} opacity="0.3"/>
+                {/* Card data lines */}
+                <g stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.5">
+                    <line x1="48" y1="39" x2="66" y2="39"/>
+                    <line x1="48" y1="44" x2="62" y2="44"/>
+                    <line x1="34" y1="50" x2="58" y2="50"/>
+                    <line x1="34" y1="55" x2="52" y2="55"/>
+                </g>
+                {/* Lens circle overlaid — examining the card */}
+                <circle cx="56" cy="46" r="11" fill="none" stroke={color} strokeWidth="2.8"/>
+                {/* Lens inner detail */}
+                <circle cx="56" cy="46" r="3" fill={color}/>
+                <g stroke={color} strokeWidth="1.6" strokeLinecap="round" opacity="0.45">
+                    <line x1="48" y1="46" x2="52" y2="46"/>
+                    <line x1="60" y1="46" x2="64" y2="46"/>
+                    <line x1="56" y1="38" x2="56" y2="42"/>
+                    <line x1="56" y1="50" x2="56" y2="54"/>
+                </g>
+            </svg>
+        );
+
+        // ─── V6: Bill Lens Hybrid ─────────────────────────────────
+        // A receipt shape that morphs into a lens — the receipt's top becomes a circular lens
+        const Logo6_BillLensHybrid = ({color}) => (
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                {/* Receipt body — bottom portion */}
+                <path d="M 38 44 L 38 80 Q 38 84, 42 84 L 58 84 Q 62 84, 62 80 L 62 44"
+                      fill="none" stroke={color} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+                {/* Receipt lines */}
+                <g stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.45">
+                    <line x1="42" y1="53" x2="58" y2="53"/>
+                    <line x1="43" y1="59" x2="57" y2="59"/>
+                    <line x1="43" y1="65" x2="55" y2="65"/>
+                    <line x1="44" y1="71" x2="56" y2="71"/>
+                    <line x1="45" y1="77" x2="53" y2="77"/>
+                </g>
+                {/* Lens circle at top — the receipt expands into a lens */}
+                <circle cx="50" cy="36" r="17" fill="none" stroke={color} strokeWidth="3.2"/>
+                {/* Transition curves — receipt morphing into lens */}
+                <path d="M 38 44 Q 38 48, 42 48 L 58 48 Q 62 48, 62 44"
+                      fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" opacity="0.5"/>
+                {/* Focal point inside lens */}
+                <circle cx="50" cy="36" r="3" fill={color}/>
+                <g stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.55">
+                    <line x1="37" y1="36" x2="45" y2="36"/>
+                    <line x1="55" y1="36" x2="63" y2="36"/>
+                    <line x1="50" y1="23" x2="50" y2="31"/>
+                    <line x1="50" y1="41" x2="50" y2="49"/>
+                </g>
+            </svg>
+        );
+
+        // ─── App Component ────────────────────────────────────────
+        const LogoShowcase = () => {
+            const [selected, setSelected] = useState(null);
+
+            const logos = [
+                {
+                    Component: Logo1_ReceiptGlass,
+                    title: 'Yuanbao Lens',
+                    subtitle: '元宝 + 放大镜 · 财富洞察',
+                    philosophy: '放大镜内是一枚中国元宝——最纯正的金钱符号。船形底部、双翼翘角、中央隆起，三道曲线勾勒出金元宝的经典轮廓。一抹白色高光掠过隆起处，暗示金属质感；两颗星芒点缀上方，呼应"洞察闪光"。元宝 = 财富，放大镜 = SpendLens，形简意深。',
+                    color: PINK,
+                },
+                {
+                    Component: Logo2_FocusReceipt,
+                    title: 'Focus Receipt',
+                    subtitle: '散焦→清晰 · 动态叙事',
+                    philosophy: '镜头四周散落模糊的数据点（未分析的账单），越靠近中心越清晰锐利（SpendLens 分析后的结果）。用视觉语言讲述产品核心价值：让混乱的消费数据变得一目了然。',
+                    color: PINK,
+                },
+                {
+                    Component: Logo3_CoinLens,
+                    title: 'Coin Lens',
+                    subtitle: '硬币 + 透镜 · 金融洞察',
+                    philosophy: '放大镜聚焦于一枚 ¥ 硬币，六道光线从镜框向内汇聚。硬币=消费，透镜=洞察，光线=分析过程。双重圆形结构强化了"聚焦审视每一笔开支"的产品定位。',
+                    color: PINK,
+                },
+                {
+                    Component: Logo4_ReceiptHandle,
+                    title: 'Receipt Handle',
+                    subtitle: '小票作柄 · 形态创新',
+                    philosophy: '颠覆传统放大镜——手柄不是一根斜线，而是一张竖长的购物小票。镜头在上，账单在下，两者自然衔接。这个独特造型在众多 app 图标中拥有极高的辨识度。',
+                    color: PINK,
+                },
+                {
+                    Component: Logo5_CardLens,
+                    title: 'Card & Lens',
+                    subtitle: '卡片 + 透镜 · 现代支付',
+                    philosophy: '一张银行卡/账单卡片上叠加圆形透镜，镜头审视着卡片上的消费数据。贴合现代人"刷卡/扫码消费 → SpendLens 分析"的完整链路。圆角矩形 + 圆形的几何对比富有张力。',
+                    color: PINK,
+                },
+                {
+                    Component: Logo6_BillLensHybrid,
+                    title: 'Bill Lens Hybrid',
+                    subtitle: '账单透镜化 · 形意合一',
+                    philosophy: '下半部分是账单（矩形 + 条目横线），上半部分自然过渡为圆形透镜。两者不是拼接，而是形态上的有机融合——账单展开成为洞察，消费数据升华为清晰认知。',
+                    color: PINK,
+                },
+            ];
+
+            return (
+                <div className="min-h-screen flex flex-col items-center py-16 px-6" style={{background: 'linear-gradient(180deg, #FFF0F5 0%, #FAFAFA 25%, #FAFAFA 100%)'}}>
+
+                    {/* Header */}
+                    <div className="text-center mb-14 max-w-3xl">
+                        <div className="inline-block mb-4 px-4 py-1 rounded-full" style={{background: 'rgba(255,107,138,0.1)', border: '1px solid rgba(255,107,138,0.2)'}}>
+                            <span className="text-xs font-mono tracking-widest uppercase" style={{color: PINK}}>Round 2 — Combined Concepts</span>
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-extralight tracking-wider mb-3" style={{color: DARK}}>
+                            SpendLens
+                        </h1>
+                        <p className="font-mono text-xs opacity-40 uppercase tracking-ultra-wide mb-4">
+                            账单 × Lens · 合二为一
+                        </p>
+                        <p className="text-sm opacity-60 font-light max-w-lg mx-auto leading-relaxed">
+                            将「账单/票据」和「放大镜/透镜」两个核心意象融合，<br/>
+                            每个设计都同时承载"消费"与"洞察"两层含义。
+                        </p>
+                        <div className="w-12 h-[1px] mx-auto mt-6" style={{background: PINK, opacity: 0.4}}></div>
+                    </div>
+
+                    {/* Logo Grid */}
+                    <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-20">
+                        {logos.map((logo, index) => (
+                            <div
+                                key={index}
+                                className={`flex flex-col items-center logo-card cursor-pointer p-6 rounded-2xl transition-all duration-500 ${selected === index ? 'ring-2' : ''}`}
+                                style={selected === index ? {
+                                    ring: `2px solid ${PINK}`,
+                                    boxShadow: `0 8px 32px rgba(255,107,138,0.15)`,
+                                    background: 'rgba(255,107,138,0.04)',
+                                } : {}}
+                                onClick={() => setSelected(selected === index ? null : index)}
+                            >
+                                {/* Logo Canvas */}
+                                <div className="w-56 h-56 mb-7 flex items-center justify-center relative">
+                                    <div className="logo-aura"></div>
+                                    <div className="w-36 h-36 relative z-10 logo-canvas">
+                                        <logo.Component color={logo.color} />
+                                    </div>
+                                </div>
+
+                                {/* Text */}
+                                <div className="text-center w-full">
+                                    <h2 className="text-lg font-medium tracking-wider mb-1" style={{color: DARK}}>
+                                        {logo.title}
+                                    </h2>
+                                    <h3 className="text-xs font-mono tracking-widest mb-4" style={{color: PINK, opacity: 0.7}}>
+                                        {logo.subtitle}
+                                    </h3>
+                                    <p className="text-xs leading-relaxed opacity-60 text-left font-light text-balance">
+                                        {logo.philosophy}
+                                    </p>
+                                </div>
+
+                                <div className="divider-line mt-5 mx-auto"></div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Selection indicator */}
+                    {selected !== null && (
+                        <div className="mb-16 text-center animate-fade-in">
+                            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm" style={{background: PINK, color: 'white'}}>
+                                <span>★</span>
+                                <span>已选: <strong>{logos[selected].title}</strong></span>
+                                <span className="opacity-70">— 再次点击取消</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Dark mode comparison */}
+                    <div className="max-w-6xl w-full mb-16" style={{background: DARK, borderRadius: 24, padding: '44px 28px'}}>
+                        <div className="text-center mb-8">
+                            <p className="font-mono text-xs tracking-ultra-wide uppercase mb-1" style={{color: 'rgba(255,255,255,0.35)'}}>Dark Mode · App Icon Preview</p>
+                            <h2 className="text-2xl font-extralight tracking-wider" style={{color: 'white'}}>暗色模式下的小尺寸表现</h2>
+                        </div>
+                        <div className="grid grid-cols-3 md:grid-cols-6 gap-5 justify-items-center">
+                            {logos.map((logo, index) => (
+                                <div key={`dark-${index}`} className="flex flex-col items-center gap-2.5">
+                                    {/* iOS app icon mockup */}
+                                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-[22%] flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, #FF6B8A, #FF8E9E)'}}>
+                                        <div className="w-9 h-9 md:w-11 md:h-11">
+                                            <logo.Component color="white" />
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-mono tracking-wide opacity-45" style={{color: 'white'}}>{logo.title.split(' ')[0]}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Comparison table */}
+                    <div className="max-w-4xl w-full mb-16 overflow-x-auto">
+                        <table className="w-full text-xs font-mono opacity-50" style={{borderCollapse: 'collapse'}}>
+                            <thead>
+                                <tr style={{borderBottom: '1px solid rgba(0,0,0,0.1)'}}>
+                                    <th className="text-left py-2 pr-4 font-normal tracking-wider">设计</th>
+                                    <th className="text-left py-2 px-4 font-normal tracking-wider">账单元素</th>
+                                    <th className="text-left py-2 px-4 font-normal tracking-wider">Lens 元素</th>
+                                    <th className="text-left py-2 px-4 font-normal tracking-wider">融合方式</th>
+                                    <th className="text-left py-2 pl-4 font-normal tracking-wider">推荐场景</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style={{borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
+                                    <td className="py-2 pr-4">Yuanbao Lens</td>
+                                    <td className="py-2 px-4">中国元宝（金锭）</td>
+                                    <td className="py-2 px-4">放大镜框架 + 星光</td>
+                                    <td className="py-2 px-4">镜内审视元宝</td>
+                                    <td className="py-2 pl-4">⭐ App Store 图标首选</td>
+                                </tr>
+                                <tr style={{borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
+                                    <td className="py-2 pr-4">Focus Receipt</td>
+                                    <td className="py-2 px-4">散点→清晰条目</td>
+                                    <td className="py-2 px-4">对焦叙事</td>
+                                    <td className="py-2 px-4">过程叙事</td>
+                                    <td className="py-2 pl-4">品牌故事 / 启动页</td>
+                                </tr>
+                                <tr style={{borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
+                                    <td className="py-2 pr-4">Coin Lens</td>
+                                    <td className="py-2 px-4">¥ 硬币</td>
+                                    <td className="py-2 px-4">聚焦光线</td>
+                                    <td className="py-2 px-4">审视关系</td>
+                                    <td className="py-2 pl-4">金融理财场景</td>
+                                </tr>
+                                <tr style={{borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
+                                    <td className="py-2 pr-4">Receipt Handle</td>
+                                    <td className="py-2 px-4">小票=手柄</td>
+                                    <td className="py-2 px-4">顶部圆形镜片</td>
+                                    <td className="py-2 px-4">形态替代</td>
+                                    <td className="py-2 pl-4">独特辨识度需求</td>
+                                </tr>
+                                <tr style={{borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
+                                    <td className="py-2 pr-4">Card & Lens</td>
+                                    <td className="py-2 px-4">银行卡/账单卡片</td>
+                                    <td className="py-2 px-4">叠加审视镜头</td>
+                                    <td className="py-2 px-4">图层叠加</td>
+                                    <td className="py-2 pl-4">现代支付场景</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-2 pr-4">Bill Lens Hybrid</td>
+                                    <td className="py-2 px-4">账单矩形+横线</td>
+                                    <td className="py-2 px-4">顶部圆形透镜</td>
+                                    <td className="py-2 px-4">形体融合</td>
+                                    <td className="py-2 pl-4">品牌 logo / 官网</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="max-w-2xl text-center pb-12">
+                        <p className="font-mono text-xs opacity-25 uppercase tracking-ultra-wide leading-loose">
+                            SpendLens · Bill + Lens Logo Exploration<br/>
+                            Generated 2026
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<LogoShowcase />, document.getElementById('root'));
+    </script>
+</body>
+</html>

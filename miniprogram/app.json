@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/share/share"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#FF6B8A",
+    "navigationBarTitleText": "SpendLens",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FFF0F5"
+  },
+  "sitemapLocation": "sitemap.json"
+}

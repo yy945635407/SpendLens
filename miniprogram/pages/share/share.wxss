@@ -1,0 +1,3 @@
+/* 分享页样式 */
+.share-page { padding: 48rpx 32rpx; }
+.share-stat { background: #FFF; border-radius: 32rpx; padding: 32rpx; }

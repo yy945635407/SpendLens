@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SpendLens</title>
+<link rel="icon" type="image/svg+xml" href="/static/logo/spendlens_icon_final.svg">
+<link rel="apple-touch-icon" href="/static/logo/spendlens_icon_180.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/static/logo/spendlens_icon_64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #FF6B8A; --dark: #5C2D3E; --mint: #7BC8A4;
+    --gold: #FFD4B8; --bg: #FFF0F5;
+    --text: #1A1A1A; --muted: rgba(0,0,0,0.45);
+    --border: rgba(0,0,0,0.06);
+    --ease-out: 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; scroll-behavior:smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+    font-weight: 300;
+    background: linear-gradient(180deg, #FFF0F5 0%, #FAFAFA 25%, #FAFAFA 100%);
+    color: var(--text); min-height: 100vh; overflow-x: hidden;
+  }
+  .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; font-weight: 400; }
+  .tracking-ultra { letter-spacing: 0.2em; }
+  .text-balance { text-wrap: balance; }
+
+  /* ——— Header ——— */
+  .header {
+    text-align: center; padding: 56px 20px 36px;
+    position: relative; z-index: 10;
+  }
+  .header-badge {
+    display: inline-block; margin-bottom: 20px; padding: 5px 16px;
+    border-radius: 9999px; font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    background: rgba(255,107,138,0.08); border: 1px solid rgba(255,107,138,0.15);
+    color: var(--pink);
+  }
+  .header-logo {
+    display: block; margin: 0 auto 16px; width: 80px; height: 80px;
+    filter: drop-shadow(0 4px 16px rgba(255,107,138,0.18));
+  }
+  .header h1 {
+    font-size: clamp(40px, 8vw, 72px); font-weight: 200; color: var(--dark);
+    letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .header-tagline {
+    font-size: 15px; font-weight: 300; color: rgba(0,0,0,0.50);
+    margin-bottom: 4px; letter-spacing: 0.04em;
+  }
+  .header-tagline-en {
+    font-size: 12px; font-weight: 300; font-style: italic;
+    font-family: 'JetBrains Mono', monospace;
+    color: rgba(0,0,0,0.35); letter-spacing: 0.02em;
+    margin-bottom: 14px;
+  }
+  .header-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(0,0,0,0.38); margin-bottom: 16px;
+  }
+  .header-desc {
+    font-size: 14px; font-weight: 300; color: rgba(0,0,0,0.55);
+    max-width: 420px; margin: 0 auto; line-height: 1.7;
+  }
+  .header-line {
+    width: 40px; height: 1px; background: var(--pink); opacity: 0.3;
+    margin: 20px auto 0;
+  }
+
+  /* ——— Container ——— */
+  .container {
+    max-width: 820px; margin: 0 auto; padding: 0 24px 120px; position: relative; z-index: 5;
+  }
+
+  /* ——— Upload Zone ——— */
+  .upload-zone {
+    position: relative; border-radius: 20px; padding: 40px 24px;
+    text-align: center; cursor: pointer;
+    background: rgba(255,255,255,0.7); border: 1px solid var(--border);
+    transition: all var(--ease-out); margin-bottom: 28px;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(255,107,138,0.10);
+    border-color: rgba(255,107,138,0.20);
+    background: rgba(255,255,255,0.9);
+  }
+  .upload-zone.has-file {
+    border-color: rgba(123,200,164,0.25); background: rgba(123,200,164,0.04);
+  }
+  .upload-icon {
+    font-size: 36px; margin-bottom: 14px; display: block; line-height: 1;
+  }
+  .upload-zone h3 {
+    font-size: 16px; font-weight: 400; color: var(--text); margin-bottom: 4px;
+  }
+  .upload-zone p {
+    font-size: 12px; color: var(--muted); font-weight: 300;
+  }
+  .upload-hint {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
+    padding: 4px 14px; border-radius: 9999px;
+    background: rgba(255,107,138,0.05); border: 1px solid rgba(255,107,138,0.10);
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    color: var(--pink); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* ——— Loading ——— */
+  .loading { display:none; text-align:center; padding:56px 20px; }
+  .loading.active { display:block; }
+  .spinner-ring {
+    width: 44px; height: 44px; margin: 0 auto 20px; position: relative;
+  }
+  .spinner-ring div {
+    position: absolute; width: 100%; height: 100%;
+    border: 2px solid transparent; border-top-color: var(--pink); border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+  }
+  .spinner-ring div:nth-child(2) {
+    width: 65%; height: 65%; top: 17.5%; left: 17.5%;
+    border-top-color: rgba(255,107,138,0.3); animation-duration: 0.8s; animation-direction: reverse;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; font-weight: 400; color: var(--text); }
+  .loading-sub { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+
+  .gen-loading { display:none; text-align:center; padding:40px 20px; }
+  .gen-loading.active { display:block; }
+
+  /* ——— Divider ——— */
+  .divider-line {
+    width: 0; height: 1px; background: var(--pink); opacity: 0.2;
+    transition: width var(--ease-out);
+  }
+  .section-block:hover .divider-line { width: 100%; }
+  .divider-full {
+    width: 100%; height: 1px; background: rgba(0,0,0,0.06);
+    margin: 28px 0 24px;
+  }
+
+  /* ——— Tab Bar ——— */
+  .tab-bar { display:none; gap: 6px; margin-bottom: 32px; }
+  .tab-bar.active { display:flex; }
+  .tab-btn {
+    flex: 1; padding: 10px 8px; border: none; border-radius: 14px;
+    font-size: 12px; font-weight: 400; cursor: pointer;
+    background: rgba(255,255,255,0.6); border: 1px solid var(--border);
+    color: var(--muted); transition: all var(--ease-out);
+    font-family: inherit; white-space: nowrap; letter-spacing: 0.02em;
+  }
+  .tab-btn.active {
+    background: var(--pink); color: #FFF; border-color: var(--pink);
+    box-shadow: 0 4px 16px rgba(255,107,138,0.25); font-weight: 500;
+  }
+
+  .tab-content { display:none; }
+  .tab-content.active { display:block; animation: fadeSlide 0.5s ease-out; }
+  @keyframes fadeSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ——— Preview ——— */
+  .preview { display:none; }
+  .preview.active { display:block; }
+
+  /* ——— Section Block ——— */
+  .section-block {
+    background: rgba(255,255,255,0.7); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px; margin-bottom: 20px;
+    transition: all var(--ease-out);
+  }
+  .section-block:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.04); }
+
+  /* ——— Health Score ——— */
+  .health-container { display:flex; justify-content:center; margin-bottom: 24px; }
+  .health-card {
+    display: flex; align-items: center; gap: 24px;
+    padding: 28px 32px; width: 100%; max-width: 440px;
+  }
+  .health-ring-svg { flex-shrink: 0; }
+  .health-info { flex: 1; min-width: 0; }
+  .health-score-num {
+    font-size: 48px; font-weight: 200; line-height: 1; letter-spacing: -0.02em;
+  }
+  .health-grade {
+    font-size: 15px; font-weight: 500; margin-top: 4px; letter-spacing: 0.02em;
+  }
+  .health-suggestions {
+    font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6;
+    font-weight: 300; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* ——— Stats Grid ——— */
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px; }
+  @media (max-width:600px) { .stats-grid { grid-template-columns:repeat(2,1fr); } }
+
+  .stat-card {
+    padding: 20px; position: relative; overflow: hidden;
+    animation: cardIn 0.6s ease-out both;
+  }
+  .stat-card:nth-child(1) { animation-delay: 0s; }
+  .stat-card:nth-child(2) { animation-delay: 0.05s; }
+  .stat-card:nth-child(3) { animation-delay: 0.10s; }
+  .stat-card:nth-child(4) { animation-delay: 0.15s; }
+  .stat-card:nth-child(5) { animation-delay: 0.20s; }
+  .stat-card:nth-child(6) { animation-delay: 0.25s; }
+  @keyframes cardIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+  .stat-card .accent-dot {
+    position: absolute; top: 16px; right: 16px;
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .stat-card .value {
+    font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500;
+    margin-bottom: 6px; letter-spacing: -0.02em;
+  }
+  .stat-card .label { font-size: 11px; color: var(--muted); font-weight: 400; letter-spacing: 0.04em; }
+  .stat-card .sub { font-size: 10px; margin-top: 3px; font-weight: 300; opacity: 0.7; }
+
+  /* ——— Category List ——— */
+  .cat-list { padding: 28px; }
+  .cat-list h4 {
+    font-size: 14px; font-weight: 500; margin-bottom: 20px;
+    letter-spacing: 0.04em;
+  }
+  .cat-item { display:flex; align-items:center; margin-bottom: 11px; gap:10px; }
+  .cat-item:last-child { margin-bottom:0; }
+  .cat-name {
+    width: 74px; font-size: 12px; text-align: right; font-weight: 400;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .bar-wrap { flex:1; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow:hidden; }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--pink), rgba(255,107,138,0.5));
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cat-amt {
+    width: 78px; font-size: 11px; color: var(--muted); text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-weight: 400;
+  }
+  .cat-pct {
+    font-size: 11px; color: var(--pink); width: 38px; text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-weight: 400;
+    opacity: 0.7;
+  }
+
+  /* ——— Section Title ——— */
+  .section-title {
+    font-size: 16px; font-weight: 400; margin: 28px 0 14px;
+    letter-spacing: 0.06em; display: flex; align-items: center; gap: 12px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.06);
+  }
+
+  /* ——— Chart Container ——— */
+  .chart-container {
+    padding: 20px; overflow: hidden;
+  }
+  .chart-container img { width:100%; border-radius:12px; display:block; }
+
+  /* ——— Budget Tab ——— */
+  .budget-form { padding: 28px; }
+  .budget-row {
+    display:flex; align-items:center; gap:12px; margin-bottom:12px;
+    padding: 10px 16px; background: rgba(255,240,245,0.4);
+    border-radius: 12px; transition: background var(--ease-out);
+  }
+  .budget-row:hover { background: rgba(255,107,138,0.04); }
+  .budget-row label {
+    width: 84px; font-size: 12px; font-weight: 400; text-align: right;
+    letter-spacing: 0.04em;
+  }
+  .budget-row input, .rule-form select, .rule-form input {
+    padding: 9px 14px; border: 1px solid rgba(0,0,0,0.10); border-radius: 10px;
+    font-size: 13px; font-family: inherit; font-weight: 300;
+    outline: none; transition: all var(--ease-out); background: #FFF; width: 120px;
+  }
+  .budget-row input:focus, .rule-form select:focus, .rule-form input:focus {
+    border-color: rgba(255,107,138,0.4); box-shadow: 0 0 0 3px rgba(255,107,138,0.06);
+  }
+  .budget-comparison { margin-top: 24px; }
+  .budget-comp-item { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; }
+  .budget-comp-bar { flex:1; height:6px; background:rgba(0,0,0,0.05); border-radius:3px; overflow:hidden; }
+  .budget-comp-fill { height:100%; border-radius:3px; transition: width 0.6s cubic-bezier(0.16,1,0.3,1); }
+
+  /* ——— Rules Tab ——— */
+  .rules-list { padding: 24px 28px; }
+  .rule-item {
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+    border-radius: 10px; font-size:12px; flex-wrap:wrap; font-weight: 300;
+    transition: background var(--ease-out);
+  }
+  .rule-item:hover { background: rgba(255,240,245,0.3); }
+  .rule-item + .rule-item { border-top: 1px solid rgba(0,0,0,0.04); }
+  .rule-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 8px;
+    font-size: 10px; font-weight: 500;
+    background: rgba(255,107,138,0.08); color: var(--pink);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em;
+  }
+  .rule-form { padding: 24px 28px; }
+  .rule-form select, .rule-form input { font-size: 12px; }
+
+  /* ——— Simulate Tab ——— */
+  .sim-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:24px; }
+  @media (max-width:500px) { .sim-cards { grid-template-columns:1fr; } }
+  .sim-card {
+    padding: 24px; cursor: pointer; border: 1px solid transparent;
+    transition: all var(--ease-out);
+  }
+  .sim-card:hover {
+    border-color: rgba(255,107,138,0.18);
+    box-shadow: 0 8px 32px rgba(255,107,138,0.08);
+    transform: translateY(-4px);
+  }
+  .sim-card .sim-icon { font-size: 26px; margin-bottom: 10px; display: block; }
+  .sim-card .sim-title { font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: 0.02em; }
+  .sim-card .sim-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
+  .sim-result {
+    padding: 28px; margin-top: 20px; border: 1px solid rgba(255,107,138,0.12);
+    animation: fadeSlide 0.5s ease-out;
+  }
+  .sim-result .sim-big {
+    font-size: 36px; font-weight: 200; color: var(--pink); margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;
+  }
+
+  /* ——— Buttons ——— */
+  .btn {
+    display: inline-flex; align-items:center; justify-content:center; gap: 6px;
+    padding: 12px 24px; border: none; border-radius: 14px; font-size: 13px;
+    font-weight: 400; cursor: pointer; transition: all var(--ease-out);
+    font-family: inherit; letter-spacing: 0.03em; white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--pink); color: #FFF;
+    box-shadow: 0 4px 16px rgba(255,107,138,0.22);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,107,138,0.30); }
+  .btn-primary:disabled { background: #D0D0D0; box-shadow: none; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: rgba(255,255,255,0.7); color: var(--text);
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .btn-secondary:hover { background: #FFF; border-color: rgba(0,0,0,0.15); }
+  .btn-small { padding:6px 16px; font-size:11px; border-radius:10px; }
+  .btn-danger { background: var(--pink); color: #FFF; }
+  .btn-row { display:flex; gap:10px; justify-content:center; margin-top:28px; flex-wrap:wrap; }
+
+  /* ——— Toast ——— */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-120px);
+    background: rgba(92,45,62,0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    color: #FFF; padding: 12px 24px; border-radius: 14px;
+    font-size: 13px; font-weight: 300; letter-spacing: 0.03em;
+    z-index: 1000; pointer-events: none;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: rgba(180,40,40,0.95); }
+
+  /* ——— Footer ——— */
+  .footer {
+    text-align:center; padding: 24px;
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    color: rgba(0,0,0,0.20); letter-spacing: 0.15em; text-transform: uppercase;
+  }
+
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">Bill + Lens · 账单洞察</div>
+  <!-- SpendLens Logo -->
+  <svg class="header-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="48" cy="42" r="23" fill="none" stroke="#FF6B8A" stroke-width="3.5"/>
+    <g fill="#FF6B8A" opacity="0.2">
+      <circle cx="28" cy="25" r="2.2"/><circle cx="34" cy="22" r="1.8"/>
+      <circle cx="68" cy="28" r="2.0"/><circle cx="66" cy="22" r="1.5"/>
+      <circle cx="26" cy="48" r="1.8"/><circle cx="30" cy="58" r="1.6"/>
+      <circle cx="66" cy="54" r="1.9"/><circle cx="70" cy="44" r="1.7"/>
+    </g>
+    <g fill="#FF6B8A" opacity="0.45">
+      <circle cx="36" cy="32" r="2.0"/><circle cx="60" cy="34" r="2.0"/>
+      <circle cx="34" cy="42" r="2.1"/><circle cx="62" cy="42" r="2.1"/>
+      <circle cx="38" cy="52" r="1.9"/><circle cx="58" cy="50" r="1.9"/>
+    </g>
+    <g stroke="#FF6B8A" stroke-width="2.4" stroke-linecap="round">
+      <line x1="38" y1="36" x2="58" y2="36" opacity="0.85"/>
+      <line x1="39" y1="42" x2="57" y2="42" opacity="0.65"/>
+      <line x1="40" y1="48" x2="56" y2="48" opacity="0.5"/>
+    </g>
+    <circle cx="48" cy="42" r="3.2" fill="#FF6B8A"/>
+    <line x1="65" y1="58" x2="87" y2="82" stroke="#FF6B8A" stroke-width="6" stroke-linecap="round"/>
+  </svg>
+  <h1>SpendLens</h1>
+  <div class="header-tagline">看得见的生活。</div>
+  <div class="header-tagline-en">Every number has a story.</div>
+  <div class="header-sub">家庭账单智能分析</div>
+  <p class="header-desc">导入 iCost 账单文件，自动生成深度分析报告。让每一笔支出都清晰可见。</p>
+  <div class="header-line"></div>
+</div>
+
+<div class="container">
+
+  <!-- Upload -->
+  <div class="upload-zone section-block" id="uploadZone">
+    <span class="upload-icon icon">📁</span>
+    <h3>导入 iCost 账单文件</h3>
+    <p>拖拽到此处，或点击选择文件</p>
+    <div class="upload-hint">
+      <span>.xlsx</span> <span style="opacity:0.4;">/</span> <span>.xls</span>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+    <input type="file" id="compareInput" accept=".xlsx,.xls" hidden>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner-ring"><div></div><div></div></div>
+    <div class="loading-text" id="loadingText">正在分析账单数据…</div>
+    <div class="loading-sub">Parsing · Computing · Rendering</div>
+  </div>
+  <div class="gen-loading" id="genLoading">
+    <div class="spinner-ring"><div></div><div></div></div>
+    <div class="loading-text">正在生成报告…</div>
+    <div class="loading-sub">10 — 15 seconds</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-tab="overview">概览</button>
+    <button class="tab-btn" data-tab="budget">预算</button>
+    <button class="tab-btn" data-tab="rules">规则</button>
+    <button class="tab-btn" data-tab="simulate">模拟</button>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview" id="preview">
+
+    <!-- ====== Overview Tab ====== -->
+    <div class="tab-content active" id="tab-overview">
+
+      <div class="health-container">
+        <div class="section-block health-card" id="healthCircle" style="display:none;">
+          <svg class="health-ring-svg" width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="6"/>
+            <circle id="healthRingCircle" cx="45" cy="45" r="38" fill="none" stroke="#7BC8A4" stroke-width="6"
+              stroke-linecap="round" stroke-dasharray="0 239" transform="rotate(-90 45 45)"
+              style="transition: stroke-dasharray 1s cubic-bezier(0.16,1,0.3,1);"/>
+            <text x="45" y="44" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="rgba(0,0,0,0.25)" letter-spacing="0.1em">SCORE</text>
+            <text id="healthScoreText" x="45" y="65" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="22" font-weight="400" fill="#7BC8A4">--</text>
+          </svg>
+          <div class="health-info">
+            <div class="health-score-num" id="healthScore">--</div>
+            <div class="health-grade" id="healthGrade">--</div>
+            <div class="health-suggestions" id="healthText">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <!-- Category List -->
+      <div class="section-block cat-list" id="catList"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnGenerate" onclick="generatePPT()">生成 PPT</button>
+        <button class="btn btn-secondary" id="btnPDF" onclick="generatePDF()">下载 PDF</button>
+        <button class="btn btn-secondary" onclick="generateShare()">分享</button>
+        <button class="btn btn-secondary" onclick="resetAll()">重传</button>
+      </div>
+      <p style="text-align:center;margin-top:16px;font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(0,0,0,0.2);letter-spacing:0.1em;text-transform:uppercase;">
+        PPT · PDF · Share Link
+      </p>
+    </div>
+
+    <!-- ====== Budget Tab ====== -->
+    <div class="tab-content" id="tab-budget">
+      <div class="section-title">月度预算设置</div>
+      <div class="section-block budget-form" id="budgetForm">
+        <div class="budget-row">
+          <label>总预算</label>
+          <input type="number" id="budgetTotal" placeholder="8000" step="100">
+          <span style="font-size:11px;color:var(--muted);font-weight:300;">元/月</span>
+        </div>
+        <div id="budgetCats"></div>
+        <div style="display:flex;gap:10px;margin-top:18px;">
+          <button class="btn btn-primary btn-small" onclick="saveBudget()">保存</button>
+          <button class="btn btn-secondary btn-small" onclick="addBudgetCat()">+ 添加</button>
+        </div>
+      </div>
+      <div class="budget-comparison" id="budgetComparison"></div>
+    </div>
+
+    <!-- ====== Rules Tab ====== -->
+    <div class="tab-content" id="tab-rules">
+      <div class="section-title">自动标签规则</div>
+      <div class="section-block rules-list" id="rulesList">
+        <p style="color:var(--muted);text-align:center;padding:20px 0;font-weight:300;">暂无规则</p>
+      </div>
+      <div class="section-block rule-form">
+        <p style="font-size:13px;font-weight:500;margin-bottom:14px;letter-spacing:0.04em;">添加规则</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:300;">如果</span>
+          <select id="ruleField"><option value="note">备注</option><option value="cat1">一级分类</option><option value="cat2">二级分类</option></select>
+          <select id="ruleOp"><option value="contains">包含</option><option value="eq">等于</option><option value="regex">正则</option></select>
+          <input type="text" id="ruleValue" placeholder="关键词" style="width:100px;">
+          <span style="font-size:11px;font-weight:300;">→ 标签</span>
+          <input type="text" id="ruleTag" placeholder="标签名" style="width:80px;">
+          <button class="btn btn-primary btn-small" onclick="addRule()">创建</button>
+        </div>
+        <p style="margin-top:10px;font-size:11px;color:var(--muted);font-weight:300;">
+          可选：金额
+          <select id="ruleCondOp" style="margin:0 4px;"><option value="">不限</option><option value="lt">小于</option><option value="gt">大于</option></select>
+          <input type="number" id="ruleCondVal" placeholder="金额" style="width:80px;" step="10">
+        </p>
+      </div>
+    </div>
+
+    <!-- ====== Simulate Tab ====== -->
+    <div class="tab-content" id="tab-simulate">
+      <div class="section-title">场景模拟</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:18px;font-weight:300;">点击预设场景，预览财务影响</p>
+      <div class="sim-cards" id="simCards"></div>
+      <div class="section-block sim-result hidden" id="simResult"></div>
+      <div style="margin-top:24px;">
+        <p style="font-size:13px;font-weight:500;margin-bottom:10px;letter-spacing:0.04em;">自定义场景</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="simType">
+            <option value="reduce_category">减少支出</option>
+            <option value="increase_income">增加收入</option>
+            <option value="target_savings_rate">目标储蓄率</option>
+          </select>
+          <input type="text" id="simCat" placeholder="分类名" style="width:80px;">
+          <input type="number" id="simPct" placeholder="20" style="width:80px;" step="5" value="20">
+          <span style="font-size:12px;font-weight:300;">%</span>
+          <button class="btn btn-primary btn-small" onclick="runSimulate()">计算</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">SpendLens · Bill + Lens · Powered by AI</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  let analysisData = null;
+  let uploadedFile = null;
+  let budgetConfig = {monthly_total: 8000, categories: {}};
+  let autoRules = [];
+  const $ = id => document.getElementById(id);
+
+  // ---- Upload ----
+  const uploadZone = $('uploadZone');
+  const fileInput = $('fileInput');
+
+  uploadZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0]; if (f) handleFile(f);
+  });
+
+  function handleFile(file) {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) { showToast('请上传 .xlsx 或 .xls 文件', true); return; }
+    uploadedFile = file;
+    uploadZone.classList.add('has-file');
+    uploadZone.querySelector('.icon').textContent = '✅';
+    uploadZone.querySelector('h3').textContent = file.name;
+    uploadZone.querySelector('p').textContent = `${(file.size/1024).toFixed(1)} KB · 点击更换`;
+    runAnalysis(file);
+  }
+
+  // ---- Analysis ----
+  async function runAnalysis(file) {
+    $('loading').classList.add('active'); $('preview').classList.remove('active');
+    $('genLoading').classList.remove('active'); $('tabBar').classList.remove('active');
+
+    const fd = new FormData(); fd.append('file', file);
+    try {
+      const resp = await fetch('/analyze', { method: 'POST', body: fd });
+      const json = await resp.json();
+      if (json.error) { showToast(json.error, true); $('loading').classList.remove('active'); return; }
+      analysisData = json.data;
+      renderOverview(analysisData);
+      renderBudgetTab();
+      renderRulesTab();
+      renderSimTab();
+      $('loading').classList.remove('active');
+      $('preview').classList.add('active');
+      $('tabBar').classList.add('active');
+      showToast('分析完成');
+    } catch (err) { showToast('分析失败: ' + err.message, true); $('loading').classList.remove('active'); }
+  }
+
+  // ---- Tab Switching ----
+  document.getElementById('tabBar').addEventListener('click', e => {
+    if (!e.target.classList.contains('tab-btn')) return;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+  });
+
+  // ---- Overview ----
+  function renderOverview(d) {
+    if (d.health) {
+      const score = d.health.score || 0;
+      const color = d.health.color || '#7BC8A4';
+      $('healthCircle').style.display = 'flex';
+      $('healthScore').textContent = score + ' 分';
+      $('healthScore').style.color = color;
+      $('healthGrade').textContent = d.health.grade + ' · ' + d.health.grade_text;
+      $('healthGrade').style.color = color;
+      $('healthText').textContent = (d.health.suggestions || []).slice(0,2).join(' | ');
+
+      const circle = $('healthRingCircle');
+      const circumference = 2 * Math.PI * 38;
+      const dashLen = (score / 100) * circumference;
+      circle.setAttribute('stroke', color);
+      circle.setAttribute('stroke-dasharray', `${dashLen} ${circumference}`);
+      $('healthScoreText').textContent = score;
+      $('healthScoreText').setAttribute('fill', color);
+    }
+
+    const stats = [
+      { label:'总收入', value:`¥${d.total_income.toLocaleString()}`, sub:`${d.income_count} 笔`, color:'#7BC8A4' },
+      { label:'总支出', value:`¥${d.total_expense.toLocaleString()}`, sub:`${d.expense_count} 笔`, color:'#FF6B8A' },
+      { label:'结余', value:`¥${d.balance.toLocaleString()}`, sub:`储蓄率 ${d.savings_rate}%`, color:'#FF85A2' },
+      { label:'日均', value:`¥${d.daily_avg.toLocaleString()}`, sub: d.month || '', color:'#FFB3C6' },
+      { label:'最大类', value: (d.cat1_list[0]||['-'])[0], sub:`¥${(d.cat1_list[0]||[0,0])[1]?.toLocaleString()||0}`, color:'#FF7EB3' },
+      { label:'交易', value:`${d.transaction_count} 笔`, sub:`${d.income_count}收 · ${d.expense_count}支`, color:'#C4909E' },
+    ];
+    $('statsGrid').innerHTML = stats.map(s => `
+      <div class="section-block stat-card" style="border-left:3px solid ${s.color};">
+        <div class="accent-dot" style="background:${s.color};opacity:0.3;"></div>
+        <div class="value" style="color:${s.color}">${s.value}</div>
+        <div class="label">${s.label}</div>
+        <div class="sub" style="color:${s.color};">${s.sub}</div>
+      </div>`).join('');
+
+    const cc = ['#FF6B8A','#FF85A2','#FF9EBB','#FFB3C6','#FF7EB3','#FFD4B8','#C4909E','#E8A0B4'];
+    const maxC = (d.cat1_list[0]||[0,1])[1] || 1;
+    $('catList').innerHTML = `<h4>支出一级分类</h4>${d.cat1_list.slice(0,8).map((c,i) => `
+      <div class="cat-item">
+        <span class="cat-name" title="${c[0]}">${c[0].length>5?c[0].slice(0,5)+'…':c[0]}</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${c[1]/maxC*100}%;"></div></div>
+        <span class="cat-amt">¥${c[1].toLocaleString()}</span>
+        <span class="cat-pct">${(c[1]/d.total_expense*100).toFixed(1)}%</span>
+      </div>`).join('')}`;
+
+    renderBudgetComparison();
+  }
+
+  // ---- Budget Tab ----
+  function renderBudgetTab() {
+    loadBudget().then(() => {
+      const cats = budgetConfig.categories || {};
+      let html = '';
+      for (const [name, amt] of Object.entries(cats)) {
+        html += `<div class="budget-row"><label>${name}</label>
+          <input type="number" class="budget-cat-input" data-cat="${name}" value="${amt}" step="50">
+          <span style="font-size:11px;color:var(--muted);font-weight:300;">元</span>
+          <button class="btn btn-danger btn-small" onclick="removeBudgetCat('${name}')">×</button></div>`;
+      }
+      $('budgetCats').innerHTML = html;
+      if (budgetConfig.monthly_total) $('budgetTotal').value = budgetConfig.monthly_total;
+    });
+  }
+
+  async function loadBudget() {
+    try { const r = await fetch('/budget'); const j = await r.json(); if (j.success) budgetConfig = j.budget; } catch (e) {}
+  }
+
+  async function saveBudget() {
+    budgetConfig.monthly_total = parseFloat($('budgetTotal').value) || 8000;
+    budgetConfig.categories = {};
+    document.querySelectorAll('.budget-cat-input').forEach(inp => {
+      budgetConfig.categories[inp.dataset.cat] = parseFloat(inp.value) || 0;
+    });
+    try {
+      await fetch('/budget', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(budgetConfig) });
+      showToast('预算已保存'); renderBudgetComparison();
+    } catch (e) { showToast('保存失败', true); }
+  }
+
+  function addBudgetCat() {
+    const name = prompt('输入分类名称（如：餐饮）');
+    if (!name) return;
+    budgetConfig.categories[name] = 0;
+    renderBudgetTab();
+  }
+
+  function removeBudgetCat(name) { delete budgetConfig.categories[name]; renderBudgetTab(); }
+
+  function renderBudgetComparison() {
+    if (!analysisData || !analysisData.budget_comparison) return;
+    const bc = analysisData.budget_comparison;
+    let html = '<div class="section-block"><h4 style="font-size:14px;font-weight:500;margin-bottom:14px;letter-spacing:0.04em;">预算执行情况</h4>';
+    if (bc.total_pct !== null) {
+      const clr = bc.total_pct>100 ? 'var(--pink)' : 'var(--mint)';
+      html += `<div style="font-size:12px;margin-bottom:14px;padding:10px 16px;border-radius:10px;color:${clr};font-weight:400;background:${bc.total_pct>100?'rgba(255,107,138,0.05)':'rgba(123,200,164,0.05)'};">
+        总计：¥${bc.total_actual.toLocaleString()} / ¥${bc.total_budget.toLocaleString()} · ${bc.total_pct}%</div>`;
+    }
+    for (const c of bc.categories || []) {
+      const icon = c.status === 'over' ? '●' : c.status === 'ok' ? '●' : '○';
+      const clr = c.status === 'over' ? 'var(--pink)' : c.status === 'ok' ? 'var(--mint)' : 'var(--muted)';
+      const maxW = Math.max(c.actual, c.budget || 0, 1);
+      html += `<div class="budget-comp-item">
+        <span style="width:68px;text-align:right;font-size:11px;color:${clr};">${icon} ${c.category}</span>
+        <div class="budget-comp-bar"><div class="budget-comp-fill" style="width:${c.actual/maxW*100}%;background:${clr};"></div></div>
+        <span style="width:74px;text-align:right;color:${clr};font-size:11px;font-family:'JetBrains Mono',monospace;">¥${c.actual.toLocaleString()}</span>
+        <span style="font-size:10px;color:var(--muted);width:34px;font-family:'JetBrains Mono',monospace;">${c.pct_used!==null?c.pct_used+'%':'-'}</span></div>`;
+    }
+    html += '</div>';
+    $('budgetComparison').innerHTML = html;
+  }
+
+  // ---- Rules Tab ----
+  async function renderRulesTab() {
+    try { const r = await fetch('/rules'); const j = await r.json(); if (j.success) autoRules = j.rules; } catch (e) { autoRules = []; }
+    renderRulesList();
+  }
+
+  function renderRulesList() {
+    if (!autoRules.length) { $('rulesList').innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px 0;font-weight:300;">暂无规则 · 创建后重新上传即可自动打标签</p>'; return; }
+    $('rulesList').innerHTML = autoRules.map(r => {
+      let desc = `如果 ${r.field} <span class="rule-badge">${r.op}</span> "${r.value}"`;
+      if (r.condition) desc += ` 且 金额 ${r.condition.op} ${r.condition.value}`;
+      desc += ` → <span class="rule-badge" style="background:var(--pink);color:#FFF;">${r.set_tag}</span>`;
+      return `<div class="rule-item"><span style="flex:1;">${desc}</span><button class="btn btn-danger btn-small" onclick="deleteRule(${r.id})">删除</button></div>`;
+    }).join('');
+  }
+
+  async function addRule() {
+    const field = $('ruleField').value, op = $('ruleOp').value;
+    const value = $('ruleValue').value.trim(), tag = $('ruleTag').value.trim();
+    if (!value || !tag) { showToast('请填写完整', true); return; }
+    const condOp = $('ruleCondOp').value, condVal = parseFloat($('ruleCondVal').value);
+    const rule = { id: Date.now(), field, op, value, set_tag: tag };
+    if (condOp && !isNaN(condVal)) rule.condition = { field: 'amount', op: condOp, value: condVal };
+    autoRules.push(rule);
+    try {
+      await fetch('/rules', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(autoRules) });
+      renderRulesList();
+      $('ruleValue').value = ''; $('ruleTag').value = ''; $('ruleCondVal').value = '';
+      showToast('规则已添加 · 重新上传生效');
+    } catch (e) { showToast('保存失败', true); }
+  }
+
+  async function deleteRule(id) {
+    autoRules = autoRules.filter(r => r.id !== id);
+    try {
+      await fetch('/rules', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(autoRules) });
+      renderRulesList(); showToast('规则已删除');
+    } catch (e) { showToast('删除失败', true); }
+  }
+
+  // ---- Simulate Tab ----
+  function renderSimTab() {
+    if (!analysisData) return;
+    const presets = [
+      { icon:'🍔', title:'减少外卖 50%', desc:'若外卖支出减少一半', type:'reduce_category', category:'餐饮', by_pct:50 },
+      { icon:'💰', title:'储蓄率达 70%', desc:'需要减少多少支出', type:'target_savings_rate', target:70 },
+      { icon:'📈', title:'收入增加 10%', desc:'加薪 / 副业的影响', type:'increase_income', by_pct:10 },
+      { icon:'🎯', title:'储蓄率达 80%', desc:'FIRE 级别储蓄率', type:'target_savings_rate', target:80 },
+    ];
+    $('simCards').innerHTML = presets.map(p => `
+      <div class="section-block sim-card" onclick="runSimulate('${p.type}','${p.category||''}',${p.by_pct||p.target||0})">
+        <span class="sim-icon">${p.icon}</span>
+        <div class="sim-title">${p.title}</div>
+        <div class="sim-desc">${p.desc}</div>
+      </div>`).join('');
+  }
+
+  async function runSimulate(type, cat, pct) {
+    const ty = type || $('simType').value;
+    const ca = cat || $('simCat').value.trim();
+    const pc = pct || parseFloat($('simPct').value) || 20;
+    const sc = { type: ty, by_pct: pc, category: ca, target: pc };
+    try {
+      const r = await fetch('/simulate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ file_data: analysisData, scenario: sc }) });
+      const j = await r.json();
+      if (!j.success) { showToast(j.result?.error || '模拟失败', true); return; }
+      const res = j.result;
+      let html = `<p style="font-size:13px;color:var(--muted);font-weight:300;">${res.description}</p>`;
+      if (res.type === 'reduce_category' || res.type === 'increase_income') {
+        html += `<div class="sim-big">储蓄率 → ${res.new_savings_rate}%</div>
+          <p style="font-size:12px;margin:6px 0;font-weight:300;">月可多存：<b style="color:var(--mint);">¥${(res.new_balance - analysisData.balance).toLocaleString()}</b></p>
+          <p style="font-size:12px;margin:6px 0;font-weight:300;">年可多存：<b style="color:var(--mint);">¥${((res.new_balance - analysisData.balance)*12).toLocaleString()}</b></p>`;
+        if (res.saved_monthly) html += `<p style="font-size:12px;margin:6px 0;font-weight:300;">月节省：¥${res.saved_monthly.toLocaleString()}</p>`;
+      } else if (res.type === 'target_savings_rate') {
+        html += `<div class="sim-big">需削减 ¥${res.cut_needed.toLocaleString()}</div>
+          <p style="font-size:12px;margin:6px 0;font-weight:300;">需减少总支出：${res.pct_cut_needed}%</p>
+          <p style="font-size:12px;margin:6px 0;color:${res.achievable?'var(--mint)':'var(--pink)'};font-weight:300;">
+            ${res.achievable ? '可实现 —— 削减非必需支出即可' : '较难实现 —— 需大幅改变消费习惯'}</p>`;
+      }
+      $('simResult').innerHTML = html; $('simResult').classList.remove('hidden');
+    } catch (e) { showToast('模拟失败', true); }
+  }
+
+  // ---- Generate ----
+  async function generatePPT() {
+    if (!uploadedFile) return;
+    $('btnGenerate').disabled = true; $('genLoading').classList.add('active'); $('preview').classList.remove('active');
+    const fd = new FormData(); fd.append('file', uploadedFile);
+    try {
+      const resp = await fetch('/generate', { method:'POST', body:fd });
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.error); }
+      const blob = await resp.blob();
+      downloadBlob(blob, `SpendLens_${analysisData?.month?.replace('年','').replace('月','')||'账单'}.pptx`);
+      showToast('PPT 下载已开始');
+    } catch (err) { showToast(err.message, true); }
+    $('btnGenerate').disabled = false; $('genLoading').classList.remove('active'); $('preview').classList.add('active');
+  }
+
+  async function generatePDF() {
+    if (!uploadedFile) return;
+    $('btnPDF').disabled = true; $('genLoading').classList.add('active'); $('preview').classList.remove('active');
+    const fd = new FormData(); fd.append('file', uploadedFile);
+    try {
+      const resp = await fetch('/generate-pdf', { method:'POST', body:fd });
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.error); }
+      const blob = await resp.blob();
+      downloadBlob(blob, `SpendLens_${analysisData?.month?.replace('年','').replace('月','')||'账单'}.pdf`);
+      showToast('PDF 下载已开始');
+    } catch (err) { showToast(err.message, true); }
+    $('btnPDF').disabled = false; $('genLoading').classList.remove('active'); $('preview').classList.add('active');
+  }
+
+  async function generateShare() {
+    if (!analysisData) return;
+    try {
+      const r = await fetch('/share', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ data: analysisData }) });
+      const j = await r.json();
+      if (j.success) { await navigator.clipboard.writeText(j.share_url); showToast('分享链接已复制'); }
+    } catch (e) { showToast('分享失败', true); }
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
+
+  function resetAll() {
+    analysisData = null; uploadedFile = null;
+    $('preview').classList.remove('active'); $('loading').classList.remove('active');
+    $('genLoading').classList.remove('active'); $('tabBar').classList.remove('active');
+    uploadZone.classList.remove('has-file');
+    uploadZone.querySelector('.icon').textContent = '📁';
+    uploadZone.querySelector('h3').textContent = '导入 iCost 账单文件';
+    uploadZone.querySelector('p').textContent = '拖拽到此处，或点击选择文件';
+    fileInput.value = '';
+  }
+
+  function showToast(msg, isError = false) {
+    const t = $('toast'); t.textContent = msg; t.classList.toggle('error', isError);
+    t.classList.add('show'); clearTimeout(t._timeout);
+    t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  loadBudget();
+</script>
+</body>
+</html>

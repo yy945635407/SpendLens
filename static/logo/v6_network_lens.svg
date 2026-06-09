@@ -1,0 +1,33 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Connection arcs (thin, background) -->
+  <g fill="none" stroke="#FF6B8A" stroke-width="1.6" opacity="0.4">
+    <path d="M 32 32 Q 40 42, 45 42"/>
+    <path d="M 58 28 Q 50 40, 45 42"/>
+    <path d="M 62 46 Q 52 44, 45 42"/>
+    <path d="M 56 60 Q 48 50, 45 42"/>
+    <path d="M 34 54 Q 40 48, 45 42"/>
+  </g>
+  <!-- Primary connections (thicker) -->
+  <g fill="none" stroke="#FF6B8A" stroke-width="2.2" opacity="0.7">
+    <path d="M 30 38 Q 38 40, 45 42"/>
+    <path d="M 60 38 Q 52 40, 45 42"/>
+    <path d="M 36 56 Q 42 48, 45 42"/>
+  </g>
+  <!-- Peripheral nodes -->
+  <g fill="#FF6B8A">
+    <circle cx="30" cy="38" r="3.2" opacity="0.7"/>
+    <circle cx="60" cy="38" r="3.2" opacity="0.7"/>
+    <circle cx="36" cy="56" r="3.2" opacity="0.7"/>
+    <circle cx="32" cy="32" r="2.2" opacity="0.4"/>
+    <circle cx="58" cy="28" r="2.2" opacity="0.4"/>
+    <circle cx="62" cy="46" r="2.2" opacity="0.4"/>
+    <circle cx="56" cy="60" r="2.2" opacity="0.4"/>
+    <circle cx="34" cy="54" r="2.2" opacity="0.4"/>
+  </g>
+  <!-- Central node (lens focal point) -->
+  <circle cx="45" cy="42" r="5.5" fill="#FF6B8A"/>
+  <!-- Subtle lens ring hint (dashed) -->
+  <circle cx="45" cy="42" r="20" fill="none" stroke="#FF6B8A" stroke-width="1.5" opacity="0.25" stroke-dasharray="3 5"/>
+  <!-- Handle -->
+  <line x1="59" y1="56" x2="80" y2="79" stroke="#FF6B8A" stroke-width="4.5" stroke-linecap="round" opacity="0.8"/>
+</svg>

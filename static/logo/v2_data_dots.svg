@@ -1,0 +1,26 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#FF6B8A">
+    <!-- Ring 1: 6 dots at r=7 -->
+    <circle cx="45" cy="35" r="2.8"/><circle cx="51.06" cy="38.5" r="2.8"/>
+    <circle cx="51.06" cy="45.5" r="2.8"/><circle cx="45" cy="49" r="2.8"/>
+    <circle cx="38.94" cy="45.5" r="2.8"/><circle cx="38.94" cy="38.5" r="2.8"/>
+    <!-- Ring 2: 10 dots at r=13 -->
+    <circle cx="45" cy="29" r="2.4"/><circle cx="52.64" cy="30.97" r="2.4"/>
+    <circle cx="57.99" cy="36.36" r="2.4"/><circle cx="59.01" cy="43.62" r="2.4"/>
+    <circle cx="54.93" cy="49.5" r="2.4"/><circle cx="49.5" cy="54.93" r="2.4"/>
+    <circle cx="40.38" cy="59.01" r="2.4"/><circle cx="33.12" cy="54.93" r="2.4"/>
+    <circle cx="30.99" cy="45.5" r="2.4"/><circle cx="37.36" cy="36.36" r="2.4"/>
+    <!-- Ring 3: 16 dots at r=19 -->
+    <circle cx="45" cy="23" r="2.0"/><circle cx="50.63" cy="23.64" r="2.0"/>
+    <circle cx="55.77" cy="25.55" r="2.0"/><circle cx="59.93" cy="28.64" r="2.0"/>
+    <circle cx="62.73" cy="32.73" r="2.0"/><circle cx="63.93" cy="37.54" r="2.0"/>
+    <circle cx="63.45" cy="42.70" r="2.0"/><circle cx="61.35" cy="47.78" r="2.0"/>
+    <circle cx="57.78" cy="52.35" r="2.0"/><circle cx="53.07" cy="56.07" r="2.0"/>
+    <circle cx="47.54" cy="58.64" r="2.0"/><circle cx="41.63" cy="59.93" r="2.0"/>
+    <circle cx="35.73" cy="58.64" r="2.0"/><circle cx="30.20" cy="56.07" r="2.0"/>
+    <circle cx="25.55" cy="52.35" r="2.0"/><circle cx="22.05" cy="47.78" r="2.0"/>
+    <!-- Handle dots -->
+    <circle cx="63" cy="56" r="2.2"/><circle cx="69" cy="62" r="2.05"/>
+    <circle cx="75" cy="68" r="1.9"/><circle cx="81" cy="74" r="1.75"/>
+  </g>
+</svg>

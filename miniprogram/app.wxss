@@ -1,0 +1,117 @@
+/* SpendLens 全局样式 — 粉色卡通风 iOS 极简 */
+page {
+  --primary: #FF6B8A;
+  --primary-light: #FFB3C6;
+  --dark: #5C2D3E;
+  --text: #3D1E2A;
+  --muted: #C4909E;
+  --positive: #7BC8A4;
+  --gold: #FFD4B8;
+  --bg: #FFF0F5;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: linear-gradient(135deg, #FFF0F5 0%, #FFE4EC 50%, #FFF5F8 100%);
+  color: #3D1E2A;
+  font-size: 28rpx;
+  min-height: 100vh;
+}
+
+.container { padding: 24rpx 32rpx 120rpx; }
+
+/* Logo */
+.header-logo {
+  display: block; width: 160rpx; height: 160rpx; margin: 32rpx auto 16rpx;
+}
+
+/* 按钮 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8rpx;
+  padding: 20rpx 40rpx; border: none; border-radius: 28rpx; font-size: 28rpx;
+  font-weight: 600; transition: all 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #FF6B8A 0%, #FF85A2 100%);
+  color: #FFF; box-shadow: 0 8rpx 32rpx rgba(255,107,138,0.35);
+}
+.btn-primary[disabled] { background: #CCC; box-shadow: none; }
+.btn-secondary {
+  background: #FFF; color: var(--text); border: 2rpx solid #FFD4DF;
+}
+.btn-small { padding: 12rpx 28rpx; font-size: 24rpx; border-radius: 16rpx; }
+.btn-danger { background: #FF6B8A; color: #FFF; }
+.btn-row { display: flex; gap: 16rpx; justify-content: center; margin-top: 32rpx; flex-wrap: wrap; }
+
+/* 上传区 */
+.upload-zone {
+  border: 4rpx dashed #FFB3C6; border-radius: 40rpx; padding: 60rpx 40rpx;
+  text-align: center; background: #FFF; box-shadow: 0 4rpx 28rpx rgba(255,107,138,0.10);
+  margin-bottom: 32rpx;
+}
+.upload-zone .icon { font-size: 72rpx; margin-bottom: 16rpx; }
+.upload-zone .title { font-size: 32rpx; color: var(--text); margin-bottom: 8rpx; }
+.upload-zone .desc { font-size: 24rpx; color: var(--muted); }
+
+/* 标签栏 */
+.tab-bar {
+  display: flex; gap: 8rpx; margin-bottom: 32rpx; flex-wrap: wrap;
+  background: rgba(255,255,255,0.6); border-radius: 28rpx; padding: 8rpx;
+}
+.tab-btn {
+  flex: 1; min-width: 120rpx; padding: 18rpx 12rpx; border: none;
+  border-radius: 24rpx; font-size: 26rpx; font-weight: 600; text-align: center;
+  background: transparent; color: var(--muted); transition: all 0.2s;
+}
+.tab-btn.active { background: var(--primary); color: #FFF; box-shadow: 0 8rpx 24rpx rgba(255,107,138,0.35); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* 健康评分 */
+.health-ring-wrap { display: flex; justify-content: center; margin-bottom: 24rpx; }
+.health-ring { width: 260rpx; height: 260rpx; }
+
+/* 统计卡片网格 */
+.stats-grid { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 32rpx; }
+
+/* 分类列表 */
+.cat-list {
+  background: #FFF; border-radius: 40rpx; padding: 32rpx;
+  box-shadow: 0 4rpx 28rpx rgba(255,107,138,0.10); margin-bottom: 32rpx;
+}
+.section-title { font-size: 32rpx; font-weight: 700; margin-bottom: 20rpx; }
+
+/* 加载 */
+.loading-wrap { text-align: center; padding: 80rpx 0; }
+.spinner {
+  width: 72rpx; height: 72rpx; border: 6rpx solid #FFE4EC;
+  border-top-color: #FF6B8A; border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 24rpx;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 表单 */
+.form-card {
+  background: #FFF; border-radius: 40rpx; padding: 32rpx;
+  box-shadow: 0 4rpx 28rpx rgba(255,107,138,0.10); margin-bottom: 32rpx;
+}
+.form-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 20rpx; flex-wrap: wrap; }
+.form-label { width: 120rpx; font-size: 26rpx; text-align: right; }
+.input {
+  padding: 16rpx 24rpx; border: 2rpx solid #FFD4DF; border-radius: 20rpx;
+  font-size: 28rpx; flex: 1; min-width: 160rpx;
+}
+.picker {
+  padding: 16rpx 24rpx; border: 2rpx solid #FFD4DF; border-radius: 20rpx;
+  font-size: 26rpx; background: #FFF;
+}
+
+/* 模拟卡片 */
+.sim-cards { display: flex; flex-wrap: wrap; gap: 16rpx; margin-bottom: 32rpx; }
+.sim-result {
+  background: #FFF; border-radius: 40rpx; padding: 40rpx;
+  box-shadow: 0 8rpx 32rpx rgba(255,107,138,0.14); margin-top: 32rpx;
+}
+.sim-big { font-size: 52rpx; font-weight: 800; color: var(--primary); margin: 20rpx 0; }
+
+/* 分享页 */
+.share-page { padding: 48rpx 32rpx; }
+.share-stat { background: #FFF; border-radius: 32rpx; padding: 32rpx; margin-bottom: 24rpx; }

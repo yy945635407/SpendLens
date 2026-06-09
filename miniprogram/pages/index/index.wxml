@@ -1,0 +1,172 @@
+<!-- SpendLens 首页 — 上传 + 分析 + 预算 + 规则 + 模拟 -->
+<view class="container">
+
+  <!-- Logo -->
+  <image class="header-logo" src="/images/logo.png" mode="aspectFit" />
+
+  <!-- 上传区域 -->
+  <view class="upload-zone {{hasFile ? 'has-file' : ''}}" bindtap="chooseFile" wx:if="{{!loading}}">
+    <view class="icon">{{hasFile ? '✅' : '📁'}}</view>
+    <view class="title">{{hasFile ? fileName : '导入 iCost 账单文件'}}</view>
+    <view class="desc">{{hasFile ? fileSize + ' · 点击更换' : '支持 .xlsx / .xls 格式 · 从微信聊天文件选择'}}</view>
+  </view>
+
+  <!-- 加载 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <view style="color:var(--muted);font-size:26rpx;">正在分析账单数据…</view>
+  </view>
+
+  <!-- 分析结果 -->
+  <block wx:if="{{analysisData}}">
+
+    <!-- 标签栏 -->
+    <view class="tab-bar">
+      <view class="tab-btn {{tabActive==='overview'?'active':''}}" data-tab="overview" bindtap="switchTab">📋 概览</view>
+      <view class="tab-btn {{tabActive==='budget'?'active':''}}" data-tab="budget" bindtap="switchTab">💸 预算</view>
+      <view class="tab-btn {{tabActive==='rules'?'active':''}}" data-tab="rules" bindtap="switchTab">🏷️ 规则</view>
+      <view class="tab-btn {{tabActive==='simulate'?'active':''}}" data-tab="simulate" bindtap="switchTab">🔮 模拟</view>
+    </view>
+
+    <!-- ====== 概览 Tab ====== -->
+    <view class="tab-content {{tabActive==='overview'?'active':''}}">
+
+      <!-- 健康评分 -->
+      <view class="health-ring-wrap" wx:if="{{healthScore}}">
+        <image class="health-ring" src="{{apiBase}}/chart/{{cacheId}}/score_ring" mode="aspectFit" />
+      </view>
+
+      <!-- 统计卡片 -->
+      <view class="stats-grid">
+        <view class="stat-card" wx:for="{{stats}}" wx:key="label" style="border-left-color:{{item.accent}};">
+          <view class="stat-value" style="color:{{item.color}};">{{item.value}}</view>
+          <view class="stat-label">{{item.label}}</view>
+          <view class="stat-sub">{{item.sub}}</view>
+        </view>
+      </view>
+
+      <!-- 分类列表 -->
+      <view class="cat-list" wx:if="{{categories.length}}">
+        <view class="section-title">📂 支出一级分类</view>
+        <view class="cat-item" wx:for="{{categories}}" wx:key="name">
+          <view class="cat-name">{{item.name}}</view>
+          <view class="bar-wrap"><view class="bar-fill" style="width:{{item.barW}}%;background:{{item.color}};"></view></view>
+          <view class="cat-amt">{{item.amount}}</view>
+          <view class="cat-pct">{{item.pct}}</view>
+        </view>
+      </view>
+
+      <!-- 图表区 -->
+      <view class="section-title" wx:if="{{chartPieUrl}}">📊 支出结构</view>
+      <image wx:if="{{chartPieUrl}}" src="{{chartPieUrl}}" mode="widthFix" style="width:100%;border-radius:24rpx;margin-bottom:24rpx;" />
+
+      <image wx:if="{{chartWeeklyUrl}}" src="{{chartWeeklyUrl}}" mode="widthFix" style="width:100%;border-radius:24rpx;margin-bottom:24rpx;" />
+
+      <image wx:if="{{chartHeatmapUrl}}" src="{{chartHeatmapUrl}}" mode="widthFix" style="width:100%;border-radius:24rpx;margin-bottom:24rpx;" />
+
+      <image wx:if="{{chartIncomeUrl}}" src="{{chartIncomeUrl}}" mode="widthFix" style="width:100%;border-radius:24rpx;margin-bottom:24rpx;" />
+
+      <!-- 预算执行 -->
+      <view class="cat-list" wx:if="{{budgetComparison}}">
+        <view class="section-title">📊 预算执行情况</view>
+        <view wx:if="{{budgetComparison.total_pct !== null}}" style="font-size:26rpx;margin-bottom:16rpx;color:{{budgetComparison.total_pct>100?'var(--primary)':'var(--positive)'}};font-weight:600;">
+          总计：¥{{budgetComparison.total_actual}} / ¥{{budgetComparison.total_budget}} · {{budgetComparison.total_pct}}%
+        </view>
+        <view class="budget-comp-item" wx:for="{{budgetComparison.categories}}" wx:key="category" wx:for-item="c">
+          <view class="comp-label">{{c.status==='over'?'🔴':c.status==='ok'?'🟢':'⚪'}} {{c.category}}</view>
+          <view class="bar-wrap" style="flex:1;margin:0 12rpx;"><view class="bar-fill" style="width:{{c.actual/(c.budget||1)*100}}%;background:{{c.status==='over'?'var(--primary)':'var(--positive)'}};"></view></view>
+          <view class="comp-amt">¥{{c.actual}}</view>
+          <view class="comp-pct">{{c.pct_used}}%</view>
+        </view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="btn-row">
+        <button class="btn btn-primary" bindtap="generatePPT">✨ 生成 PPT</button>
+        <button class="btn btn-secondary" bindtap="generatePDF">📄 下载 PDF</button>
+        <button class="btn btn-secondary" bindtap="shareResult">🔗 分享</button>
+        <button class="btn btn-secondary" bindtap="resetAll">🔄 重传</button>
+      </view>
+    </view>
+
+    <!-- ====== 预算 Tab ====== -->
+    <view class="tab-content {{tabActive==='budget'?'active':''}}">
+      <view class="form-card">
+        <view class="section-title">💸 月度预算设置</view>
+        <view class="form-row">
+          <view class="form-label">📊 总预算</view>
+          <input class="input" type="number" value="{{budgetTotal}}" bindinput="onBudgetTotalChange" placeholder="8000"/>
+          <view style="font-size:24rpx;color:var(--muted);">元/月</view>
+        </view>
+        <view class="form-row" wx:for="{{budgetCats}}" wx:key="name" wx:for-item="cat">
+          <view class="form-label">{{cat.name}}</view>
+          <input class="input" type="number" value="{{cat.amount}}" bindinput="onBudgetCatChange" data-idx="{{index}}" step="50"/>
+          <view style="font-size:24rpx;color:var(--muted);">元</view>
+          <button class="btn btn-small btn-danger" bindtap="removeBudgetCat" data-idx="{{index}}">×</button>
+        </view>
+        <view style="margin-top:20rpx;display:flex;gap:16rpx;">
+          <button class="btn btn-primary btn-small" bindtap="saveBudget">💾 保存</button>
+          <button class="btn btn-secondary btn-small" bindtap="addBudgetCat">+ 添加分类</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- ====== 规则 Tab ====== -->
+    <view class="tab-content {{tabActive==='rules'?'active':''}}">
+      <view class="cat-list" wx:if="{{rules.length}}">
+        <view class="section-title">🏷️ 自动标签规则</view>
+        <view class="rule-item" wx:for="{{rules}}" wx:key="id">
+          <view style="flex:1;font-size:26rpx;">{{item.desc}}</view>
+          <button class="btn btn-small btn-danger" bindtap="deleteRule" data-idx="{{index}}">删除</button>
+        </view>
+      </view>
+      <view class="cat-list" wx:else>
+        <view style="color:var(--muted);text-align:center;">暂无规则 · 创建规则后重新上传即可自动打标签</view>
+      </view>
+      <view class="form-card">
+        <button class="btn btn-primary" bindtap="addRule">➕ 添加规则</button>
+        <view style="font-size:22rpx;color:var(--muted);margin-top:16rpx;">格式：备注 包含 外卖 → 餐饮</view>
+      </view>
+    </view>
+
+    <!-- ====== 模拟 Tab ====== -->
+    <view class="tab-content {{tabActive==='simulate'?'active':''}}">
+      <view class="section-title">🔮 场景模拟</view>
+      <view style="font-size:24rpx;color:var(--muted);margin-bottom:24rpx;">点击预设场景查看对财务的影响</view>
+
+      <view class="sim-cards">
+        <view class="sim-card" wx:for="{{simCards}}" wx:key="title" bindtap="runSimPreset" data-preset="{{item}}">
+          <view class="sim-title">{{item.title}}</view>
+          <view class="sim-desc">{{item.desc}}</view>
+        </view>
+      </view>
+
+      <view class="sim-result" wx:if="{{simResult}}">
+        <view style="font-size:28rpx;color:var(--muted);">{{simResult.description}}</view>
+        <view class="sim-big" wx:if="{{simResult.new_savings_rate}}">储蓄率 → {{simResult.new_savings_rate}}%</view>
+        <view class="sim-big" wx:if="{{simResult.cut_needed}}">需削减 ¥{{simResult.cut_needed}}</view>
+        <view style="font-size:26rpx;margin:8rpx 0;" wx:if="{{simResult.new_balance}}">💰 月可多存：<text style="color:var(--positive);font-weight:bold;">¥{{simResult.new_balance - analysisData.balance}}</text></view>
+        <view style="font-size:26rpx;margin:8rpx 0;" wx:if="{{simResult.saved_monthly}}">✂️ 月节省：¥{{simResult.saved_monthly}}</view>
+        <view style="font-size:26rpx;margin:8rpx 0;" wx:if="{{simResult.pct_cut_needed}}">📊 需减少总支出：{{simResult.pct_cut_needed}}%</view>
+        <view style="font-size:26rpx;margin:8rpx 0;color:{{simResult.achievable?'var(--positive)':'var(--primary)'}};" wx:if="{{simResult.achievable !== undefined}}">{{simResult.achievable ? '✅ 可实现' : '⚠️ 较难实现'}}</view>
+      </view>
+
+      <view class="form-card" style="margin-top:32rpx;">
+        <view style="font-size:28rpx;font-weight:600;margin-bottom:20rpx;">自定义场景</view>
+        <view class="form-row">
+          <picker class="picker" mode="selector" range="{{['减少某分类支出','增加收入','目标储蓄率']}}" value="{{simType==='reduce_category'?0:simType==='increase_income'?1:2}}" bindchange="onSimTypeChange">
+            <view>{{simType==='reduce_category'?'减少某分类支出':simType==='increase_income'?'增加收入':'目标储蓄率'}}</view>
+          </picker>
+        </view>
+        <view class="form-row">
+          <input class="input" placeholder="分类名" value="{{simCat}}" bindinput="onSimCatInput" style="flex:1;"/>
+          <input class="input" type="digit" placeholder="20" value="{{simPct}}" bindinput="onSimPctInput" style="width:140rpx;"/>
+          <view style="font-size:26rpx;">%</view>
+        </view>
+        <button class="btn btn-primary btn-small" bindtap="runCustomSim" style="margin-top:16rpx;">计算</button>
+      </view>
+    </view>
+
+  </block>
+
+</view>
