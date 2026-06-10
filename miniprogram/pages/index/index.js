@@ -12,6 +12,7 @@ Page({
     showProgress: false,
     progressTitle: '正在分析账单…',
     progressSub: '',
+    progressPct: 0,
     tabActive: 'overview',  // overview | budget | rules | simulate
 
     // 分析数据
@@ -98,19 +99,20 @@ Page({
       loading: true,
       showProgress: true,
       progressTitle: '正在分析账单…',
-      progressSub: '上传文件中…'
+      progressSub: '上传文件中…',
+      progressPct: 5
     });
 
     try {
       const result = await uploadFile(filePath);
 
-      this.setData({ progressSub: '计算统计数据…' });
+      this.setData({ progressSub: '计算统计数据…', progressPct: 30 });
 
       const d = result.data;
       app.globalData.analysisData = d;
       app.globalData.cacheId = result.cache_id;
 
-      this.setData({ progressSub: '生成健康评分…' });
+      this.setData({ progressSub: '生成健康评分…', progressPct: 60 });
 
       this.setData({
         loading: false,
@@ -127,27 +129,29 @@ Page({
       });
 
       // 加载图表
+      this.setData({ progressSub: '生成图表中…', progressPct: 75 });
       this.loadCharts(result.cache_id);
 
       // 自动创建分享快照
+      this.setData({ progressSub: '创建分享链接…', progressPct: 90 });
       this.createShareSnapshot(d);
 
-      this.setData({ showProgress: false });
+      this.setData({ showProgress: false, progressPct: 100 });
       wx.showToast({ title: '分析完成', icon: 'success' });
     } catch (err) {
-      this.setData({ loading: false, showProgress: false });
+      this.setData({ loading: false, showProgress: false, progressPct: 0 });
       wx.showToast({ title: '分析失败: ' + err.message, icon: 'none', duration: 3000 });
     }
   },
 
   buildStats(d) {
     return [
-      { label:'总收入', en:'Total Income', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4', icon:'↓' },
-      { label:'总支出', en:'Total Expense', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A', icon:'↑' },
-      { label:'结余', en:'Balance', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2', icon:'◎' },
-      { label:'日均', en:'Daily Average', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6', icon:'◉' },
-      { label:'最大支出', en:'Top Category', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3', icon:'◆' },
-      { label:'交易笔数', en:'Transactions', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E', icon:'◈' }
+      { label:'总收入', en:'Total Income', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4' },
+      { label:'总支出', en:'Total Expense', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A' },
+      { label:'结余', en:'Balance', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2' },
+      { label:'日均', en:'Daily Average', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6' },
+      { label:'最大支出', en:'Top Category', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3' },
+      { label:'交易笔数', en:'Transactions', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E' }
     ];
   },
 
@@ -350,14 +354,16 @@ Page({
     this.setData({
       showProgress: true,
       progressTitle: '正在生成 PPT…',
-      progressSub: '分析数据 · 绘制图表 · 排版中'
+      progressSub: '分析数据 · 绘制图表 · 排版中',
+      progressPct: 0
     });
     // 模拟进度更新
+    const pcts = [25, 50, 75, 95];
     const steps = ['分析数据中…', '绘制图表中…', '排版幻灯片…', '打包完成'];
     let step = 0;
     const timer = setInterval(() => {
       if (step < steps.length) {
-        this.setData({ progressSub: steps[step] });
+        this.setData({ progressSub: steps[step], progressPct: pcts[step] });
         step++;
       }
     }, 800);
@@ -367,7 +373,7 @@ Page({
       url,
       success: (res) => {
         clearInterval(timer);
-        this.setData({ showProgress: false });
+        this.setData({ showProgress: false, progressPct: 100 });
         if (res.statusCode === 200) {
           wx.openDocument({
             filePath: res.tempFilePath,
@@ -395,13 +401,15 @@ Page({
     this.setData({
       showProgress: true,
       progressTitle: '正在生成 PDF…',
-      progressSub: '分析数据 · 渲染图表 · 排版中'
+      progressSub: '分析数据 · 渲染图表 · 排版中',
+      progressPct: 0
     });
+    const pcts = [25, 50, 75, 95];
     const steps = ['分析数据中…', '渲染图表中…', '排版页面中…', '打包完成'];
     let step = 0;
     const timer = setInterval(() => {
       if (step < steps.length) {
-        this.setData({ progressSub: steps[step] });
+        this.setData({ progressSub: steps[step], progressPct: pcts[step] });
         step++;
       }
     }, 800);
@@ -411,7 +419,7 @@ Page({
       url,
       success: (res) => {
         clearInterval(timer);
-        this.setData({ showProgress: false });
+        this.setData({ showProgress: false, progressPct: 100 });
         if (res.statusCode === 200) {
           wx.openDocument({
             filePath: res.tempFilePath,
@@ -458,7 +466,24 @@ Page({
       chartIncomeUrl: '', chartAccountUrl: '', chartHeatmapUrl: '', chartBudgetUrl: '',
       chartScoreUrl: '',
       shareId: '',
-      simResult: null, tabActive: 'overview'
+      simResult: null, tabActive: 'overview',
+      progressPct: 0
+    });
+  },
+
+  cancelProgress() {
+    wx.showModal({
+      title: '取消操作',
+      content: '确定要取消当前操作吗？',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({
+            loading: false,
+            showProgress: false,
+            progressPct: 0
+          });
+        }
+      }
     });
   }
 });

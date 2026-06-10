@@ -331,8 +331,7 @@ def build_ppt(data, charts):
     for i, (acct, amt) in enumerate(data['account_list'][:4]):
         pct = amt / data['total_expense'] * 100
         ay = Inches(1.3) + i * Inches(1.15)
-        _add_rect(slide, Inches(6.5), ay, Inches(3.2), Inches(0.95), fill=C['card'], shadow=True,
-                  accent=acc_colors[i])
+        _add_rect(slide, Inches(6.5), ay, Inches(3.2), Inches(0.95), fill=C['card'], shadow=True)
         _add_text(slide, acct, Inches(6.8), ay + Inches(0.1), Inches(1.5), Inches(0.3),
                   size=13, color=C['text'], bold=True)
         _add_text(slide, f'{pct:.1f}%', Inches(8.3), ay + Inches(0.1), Inches(1.2), Inches(0.3),
@@ -362,15 +361,11 @@ def build_ppt(data, charts):
     for i, (acct, amt) in enumerate(data['income_list'][:4]):
         pct = amt / inc_total * 100 if inc_total > 0 else 0
         iiy = Inches(2.1) + i * Inches(0.65)
-        # Color dot
-        dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(6.2), iiy + Inches(0.12),
-                                     Inches(0.22), Inches(0.22))
-        dot.fill.solid(); dot.fill.fore_color.rgb = inc_colors[i]; dot.line.fill.background()
-        _add_text(slide, acct, Inches(6.55), iiy, Inches(1.5), Inches(0.3),
+        _add_text(slide, acct, Inches(6.2), iiy, Inches(1.5), Inches(0.3),
                   size=12, color=C['text'])
         _add_text(slide, f'¥{amt:,.2f}', Inches(7.8), iiy, Inches(1.5), Inches(0.3),
                   size=12, color=C['text'], bold=True, align=PP_ALIGN.RIGHT)
-        _add_text(slide, f'{pct:.1f}%', Inches(6.55), iiy + Inches(0.3), Inches(2.7), Inches(0.2),
+        _add_text(slide, f'{pct:.1f}%', Inches(6.2), iiy + Inches(0.3), Inches(2.7), Inches(0.2),
                   size=10, color=inc_colors[i])
 
     # ================================================================
@@ -438,17 +433,9 @@ def build_ppt(data, charts):
 
     for i, (icon, title, desc) in enumerate(conclusions):
         cy = Inches(1.4) + i * Inches(0.78)
-        # Icon circle
-        circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(0.7), cy + Inches(0.02),
-                                        Inches(0.5), Inches(0.5))
-        circle.fill.solid(); circle.fill.fore_color.rgb = C['primary']
-        circle.fill.fore_color.brightness = 0.75
-        circle.line.fill.background()
-        _add_text(slide, icon, Inches(0.7), cy + Inches(0.05), Inches(0.5), Inches(0.5),
-                  size=18, align=PP_ALIGN.CENTER)
-        _add_text(slide, title, Inches(1.4), cy, Inches(8.2), Inches(0.32),
+        _add_text(slide, icon + '  ' + title, Inches(0.8), cy, Inches(8.8), Inches(0.32),
                   size=14, color=RGBColor(0xFF, 0xFF, 0xFF), bold=True)
-        _add_text(slide, desc, Inches(1.4), cy + Inches(0.34), Inches(8.2), Inches(0.28),
+        _add_text(slide, desc, Inches(0.8), cy + Inches(0.34), Inches(8.8), Inches(0.28),
                   size=11, color=C['muted'])
 
     # Bottom line

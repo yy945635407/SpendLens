@@ -20,9 +20,16 @@
       </view>
       <view class="loading-title">{{progressTitle}}</view>
       <view class="loading-sub">{{progressSub}}</view>
+      <!-- 进度条 + 百分比 -->
+      <view class="progress-bar-wrap">
+        <view class="progress-bar-fill" style="width:{{progressPct}}%;"></view>
+      </view>
+      <view class="progress-pct-text">{{progressPct}}%</view>
       <view class="loading-dots">
         <view class="dot" wx:for="{{[1,2,3,4]}}" wx:key="*this" style="animation-delay:{{item*0.15}}s;"></view>
       </view>
+      <!-- 取消按钮 -->
+      <button class="btn-cancel" bindtap="cancelProgress">取消</button>
     </view>
   </view>
 
@@ -48,7 +55,6 @@
       <!-- 统计卡片 -->
       <view class="stats-grid">
         <view class="stat-card" wx:for="{{stats}}" wx:key="label" style="border-left-color:{{item.accent}};">
-          <view class="stat-icon" style="color:{{item.color}};">{{item.icon}}</view>
           <view class="stat-value" style="color:{{item.color}};">{{item.value}}</view>
           <view class="stat-label">{{item.label}}</view>
           <view class="stat-en">{{item.en}}</view>
@@ -87,7 +93,7 @@
           <view class="comp-label">{{c.status==='over'?'🔴':c.status==='ok'?'🟢':'⚪'}} {{c.category}}</view>
           <view class="bar-wrap" style="flex:1;margin:0 12rpx;"><view class="bar-fill" style="width:{{c.actual/(c.budget||1)*100}}%;background:{{c.status==='over'?'var(--primary)':'var(--positive)'}};"></view></view>
           <view class="comp-amt">¥{{c.actual}}</view>
-          <view class="comp-pct">{{c.pct_used}}%</view>
+          <view class="comp-pct" wx:if="{{c.pct_used !== null}}">{{c.pct_used}}%</view>
         </view>
       </view>
 
