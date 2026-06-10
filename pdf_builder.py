@@ -8,9 +8,14 @@ import glob
 
 def _find_pdf_font():
     """跨平台查找中文字体，返回 ttf 路径。"""
+    base = os.path.dirname(os.path.abspath(__file__))
     candidates = [
-        # 项目目录下自带字体（云部署兜底）
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts', 'NotoSansSC-Regular.ttf'),
+        # 项目目录下自带字体（最优先，保证跨平台一致性）
+        os.path.join(base, 'fonts', 'wqy-microhei.ttc'),
+        os.path.join(base, 'fonts', 'NotoSansSC-Regular.ttf'),
+    ] + glob.glob(os.path.join(base, 'fonts', '*.ttc')) \
+      + glob.glob(os.path.join(base, 'fonts', '*.ttf')) \
+      + [
         # macOS
         '/Library/Fonts/Arial Unicode.ttf',
         '/System/Library/Fonts/PingFang.ttc',

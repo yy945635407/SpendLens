@@ -142,12 +142,12 @@ Page({
 
   buildStats(d) {
     return [
-      { label:'Income', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4', icon:'↓' },
-      { label:'Expense', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A', icon:'↑' },
-      { label:'Balance', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2', icon:'◎' },
-      { label:'Daily Avg', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6', icon:'◉' },
-      { label:'Top Category', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3', icon:'◆' },
-      { label:'Transactions', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E', icon:'◈' }
+      { label:'总收入', en:'Total Income', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4', icon:'↓' },
+      { label:'总支出', en:'Total Expense', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A', icon:'↑' },
+      { label:'结余', en:'Balance', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2', icon:'◎' },
+      { label:'日均', en:'Daily Average', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6', icon:'◉' },
+      { label:'最大支出', en:'Top Category', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3', icon:'◆' },
+      { label:'交易笔数', en:'Transactions', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E', icon:'◈' }
     ];
   },
 

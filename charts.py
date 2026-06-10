@@ -11,32 +11,32 @@ from io import BytesIO
 import glob
 
 def _find_cn_font():
+    base = os.path.dirname(os.path.abspath(__file__))
     candidates = (
+        # 项目自带字体（最优先，保证跨平台一致性）
+        glob.glob(os.path.join(base, 'fonts', 'wqy-microhei.ttc')) +
+        glob.glob(os.path.join(base, 'fonts', '*.ttc')) +
+        glob.glob(os.path.join(base, 'fonts', '*.ttf')) +
         # macOS
         glob.glob('/System/Library/AssetsV2/com_apple_MobileAsset_Font8/*/AssetData/Kaiti.ttc') +
         glob.glob('/System/Library/Fonts/PingFang*') +
         glob.glob('/System/Library/Fonts/STHeiti*') +
         glob.glob('/Library/Fonts/*.ttf') +
         # Linux (Railway / Ubuntu)
-        glob.glob('/usr/share/fonts/truetype/noto/NotoSans*') +
-        glob.glob('/usr/share/fonts/truetype/noto/NotoSansCJK*') +
-        glob.glob('/usr/share/fonts/opentype/noto/NotoSans*') +
-        glob.glob('/usr/share/fonts/opentype/noto/NotoSansCJK*') +
-        glob.glob('/usr/share/fonts/noto-cjk/NotoSans*') +
-        glob.glob('/usr/share/fonts/noto-cjk/NotoSansCJK*') +
-        glob.glob('/usr/share/fonts/truetype/droid/DroidSansFallback*') +
-        glob.glob('/usr/share/fonts/truetype/wqy/*') +
-        glob.glob('/usr/share/fonts/truetype/arphic/*') +
-        # 兜底：扫描所有 ttc/ttf
-        glob.glob('/usr/share/fonts/**/*.ttc') +
-        glob.glob('/usr/share/fonts/**/*.ttf') +
-        # WenQuanYi 字体（Railway 更可靠）
-        glob.glob('/usr/share/fonts/truetype/wqy/wqy-zenhei*') +
         glob.glob('/usr/share/fonts/truetype/wqy/wqy-microhei*') +
+        glob.glob('/usr/share/fonts/truetype/wqy/wqy-zenhei*') +
+        glob.glob('/usr/share/fonts/truetype/noto/NotoSansCJK*') +
+        glob.glob('/usr/share/fonts/truetype/noto/NotoSans*') +
+        glob.glob('/usr/share/fonts/opentype/noto/NotoSansCJK*') +
+        glob.glob('/usr/share/fonts/opentype/noto/NotoSans*') +
+        glob.glob('/usr/share/fonts/noto-cjk/NotoSans*') +
+        glob.glob('/usr/share/fonts/truetype/droid/DroidSansFallback*') +
+        glob.glob('/usr/share/fonts/truetype/arphic/*') +
         glob.glob('/usr/share/fonts/wenquanyi/**/*.ttc') +
         glob.glob('/usr/share/fonts/wenquanyi/**/*.ttf') +
-        # 项目自带字体
-        glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts', '*.ttf'))
+        # 兜底：扫描所有 ttc/ttf
+        glob.glob('/usr/share/fonts/**/*.ttc') +
+        glob.glob('/usr/share/fonts/**/*.ttf')
     )
     for fp in candidates:
         try:
