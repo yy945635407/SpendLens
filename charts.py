@@ -19,9 +19,17 @@ def _find_cn_font():
         glob.glob('/Library/Fonts/*.ttf') +
         # Linux (Railway / Ubuntu)
         glob.glob('/usr/share/fonts/truetype/noto/NotoSans*') +
+        glob.glob('/usr/share/fonts/truetype/noto/NotoSansCJK*') +
         glob.glob('/usr/share/fonts/opentype/noto/NotoSans*') +
+        glob.glob('/usr/share/fonts/opentype/noto/NotoSansCJK*') +
         glob.glob('/usr/share/fonts/noto-cjk/NotoSans*') +
+        glob.glob('/usr/share/fonts/noto-cjk/NotoSansCJK*') +
         glob.glob('/usr/share/fonts/truetype/droid/DroidSansFallback*') +
+        glob.glob('/usr/share/fonts/truetype/wqy/*') +
+        glob.glob('/usr/share/fonts/truetype/arphic/*') +
+        # 兜底：扫描所有 ttc/ttf
+        glob.glob('/usr/share/fonts/**/*.ttc') +
+        glob.glob('/usr/share/fonts/**/*.ttf') +
         # 项目自带字体
         glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts', '*.ttf'))
     )
@@ -34,6 +42,13 @@ def _find_cn_font():
     return None
 
 CN_FONT_PATH = _find_cn_font()
+
+# 强制刷新 matplotlib 字体缓存（解决 Railway 部署后字体找不到的问题）
+if CN_FONT_PATH:
+    try:
+        fm._load_fontmanager(try_read_cache=False)
+    except Exception:
+        pass
 
 plt.xkcd(scale=1, length=100, randomness=2)
 

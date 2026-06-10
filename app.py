@@ -130,7 +130,9 @@ def _generate_score_ring(health):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Wedge
     from io import BytesIO
+    from charts import _fp as cn_fp
 
     score = health.get('score', 0)
     color = health.get('color', '#7BC8A4')
@@ -149,7 +151,6 @@ def _generate_score_ring(health):
     ax.axis('off')
 
     # 背景圆环
-    from matplotlib.patches import Wedge
     bg = Wedge((0, 0), 1, 0, 360, width=0.25, color='#f0f0f0')
     ax.add_patch(bg)
     # 分数圆环
@@ -157,8 +158,12 @@ def _generate_score_ring(health):
     fg = Wedge((0, 0), 1, 90, 90 - angle, width=0.25, color=rgb)
     ax.add_patch(fg)
     # 中心文字
-    ax.text(0, 0.15, f'{score}', ha='center', va='center', fontsize=48, fontweight='bold', color=rgb, fontfamily='sans-serif')
-    ax.text(0, -0.35, grade, ha='center', va='center', fontsize=18, color='#666666', fontfamily='sans-serif')
+    score_fp = cn_fp(48) if cn_fp else None
+    grade_fp = cn_fp(18) if cn_fp else None
+    ax.text(0, 0.15, f'{score}', ha='center', va='center', fontsize=48,
+            fontweight='bold', color=rgb, fontproperties=score_fp)
+    ax.text(0, -0.35, grade, ha='center', va='center', fontsize=18,
+            color='#666666', fontproperties=grade_fp)
 
     buf = BytesIO()
     fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', transparent=True)
@@ -299,6 +304,59 @@ def compare_route():
         return jsonify({'error': f'对比失败: {str(e)}'}), 500
 
 
+# ---- PPT/PDF 从小程序缓存生成（免二次上传）----
+@app.route('/generate-ppt/<cache_id>')
+def generate_ppt_from_cache(cache_id):
+    """根据缓存生成 PPT 并返回下载。"""
+    data = _analysis_cache.get(cache_id)
+    if data is None:
+        return jsonify({'error': '缓存已过期，请重新上传文件'}), 404
+
+    try:
+        charts = all_charts(data)
+        charts['heatmap'] = heatmap_daily(data['daily_list'])
+        budget_cfg = load_budget()
+        charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], budget_cfg)
+        ppt_buf = build_ppt(data, charts)
+
+        filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pptx"
+        return send_file(
+            ppt_buf,
+            mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            as_attachment=True,
+            download_name=filename,
+        )
+    except Exception as e:
+        return jsonify({'error': f'PPT生成失败: {str(e)}'}), 500
+
+
+@app.route('/generate-pdf/<cache_id>')
+def generate_pdf_from_cache(cache_id):
+    """根据缓存生成 PDF 并返回下载。"""
+    data = _analysis_cache.get(cache_id)
+    if data is None:
+        return jsonify({'error': '缓存已过期，请重新上传文件'}), 404
+
+    try:
+        charts = all_charts(data)
+        charts['heatmap'] = heatmap_daily(data['daily_list'])
+        budget_cfg = load_budget()
+        charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], budget_cfg)
+
+        from pdf_builder import build_pdf
+        pdf_buf = build_pdf(data, charts)
+
+        filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pdf"
+        return send_file(
+            pdf_buf,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename,
+        )
+    except Exception as e:
+        return jsonify({'error': f'PDF生成失败: {str(e)}'}), 500
+
+
 # ---- PDF 导出 ----
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf_route():
@@ -352,12 +410,22 @@ def share_create():
 
 @app.route('/share/<share_id>')
 def share_view(share_id):
-    """查看分享快照。"""
+    """查看分享快照（网页版）。"""
     snapshot = load_share(share_id)
     if snapshot is None:
         return render_template('share.html', error='分享不存在或已过期', data=None), 404
     return render_template('share.html', error=None, data=snapshot['data'],
                            created_at=snapshot.get('created_at', ''))
+
+
+@app.route('/api/share/<share_id>')
+def share_api(share_id):
+    """获取分享数据 JSON（小程序用）。"""
+    snapshot = load_share(share_id)
+    if snapshot is None:
+        return jsonify({'error': '分享不存在或已过期'}), 404
+    return jsonify({'success': True, 'data': snapshot['data'],
+                    'created_at': snapshot.get('created_at', '')})
 
 
 if __name__ == '__main__':

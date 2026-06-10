@@ -1,9 +1,13 @@
 # Nixpacks config for Railway
 [phases.setup]
-aptPackages = ["fonts-noto-cjk"]
+aptPackages = ["fonts-noto-cjk", "fonts-noto", "fontconfig"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = [
+    "fc-cache -fv",
+    "rm -rf /root/.cache/matplotlib /tmp/matplotlib-* 2>/dev/null || true",
+    "pip install -r requirements.txt"
+]
 
 [start]
 cmd = "python app.py"

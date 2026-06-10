@@ -23,6 +23,7 @@ Page({
     budgetComparison: null,
 
     // 图表
+    apiBase: '',
     chartPieUrl: '',
     chartFoodUrl: '',
     chartWeeklyUrl: '',
@@ -30,6 +31,8 @@ Page({
     chartAccountUrl: '',
     chartHeatmapUrl: '',
     chartBudgetUrl: '',
+    chartScoreUrl: '',
+    shareId: '',
 
     // 预算
     budgetTotal: 8000,
@@ -57,9 +60,11 @@ Page({
   },
 
   onShareAppMessage() {
+    const shareId = this.data.shareId || '';
     return {
-      title: 'SpendLens · 家庭账单智能分析',
-      path: '/pages/index/index'
+      title: 'SpendLens · 我的账单健康报告',
+      path: `/pages/share/share?shareId=${shareId}`,
+      imageUrl: this.data.chartScoreUrl || ''
     };
   },
 
@@ -111,6 +116,9 @@ Page({
       // 加载图表
       this.loadCharts(result.cache_id);
 
+      // 自动创建分享快照
+      this.createShareSnapshot(d);
+
       wx.showToast({ title: '分析完成 ✅', icon: 'success' });
     } catch (err) {
       this.setData({ loading: false });
@@ -144,6 +152,7 @@ Page({
   // ============ 图表加载 ============
   loadCharts(cacheId) {
     const apiBase = app.globalData.apiBase;
+    this.setData({ apiBase });
     const charts = {
       chartPieUrl: 'pie_spending',
       chartFoodUrl: 'bar_food',
@@ -151,7 +160,8 @@ Page({
       chartIncomeUrl: 'doughnut_income',
       chartAccountUrl: 'bar_account',
       chartHeatmapUrl: 'heatmap',
-      chartBudgetUrl: 'budget_bar'
+      chartBudgetUrl: 'budget_bar',
+      chartScoreUrl: 'score_ring',
     };
     for (const [key, name] of Object.entries(charts)) {
       this.setData({ [key]: `${apiBase}/chart/${cacheId}/${name}` });
@@ -319,29 +329,76 @@ Page({
 
   // ============ 导出 ============
   generatePPT() {
-    if (!this.data.hasFile) return;
-    wx.showLoading({ title: '生成中...' });
-    // 因为 wx.uploadFile 已在上传时使用，这里简化：通过 analysis data + generate API
-    // 实际上需要重新上传文件或使用缓存的 filePath
-    wx.showToast({ title: '请在小程序外下载 PPT', icon: 'none' });
-    wx.hideLoading();
+    if (!this.data.cacheId) {
+      wx.showToast({ title: '请先上传账单', icon: 'none' });
+      return;
+    }
+    wx.showLoading({ title: '生成 PPT 中...' });
+    const url = app.globalData.apiBase + '/generate-ppt/' + this.data.cacheId;
+    wx.downloadFile({
+      url,
+      success: (res) => {
+        wx.hideLoading();
+        if (res.statusCode === 200) {
+          wx.openDocument({
+            filePath: res.tempFilePath,
+            showMenu: true,
+            success: () => wx.showToast({ title: 'PPT 已打开 ✅', icon: 'success' }),
+            fail: () => wx.showToast({ title: '请安装 WPS 或 Office 打开', icon: 'none' })
+          });
+        } else {
+          wx.showToast({ title: 'PPT 生成失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.hideLoading();
+        wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
+      }
+    });
   },
 
   generatePDF() {
-    if (!this.data.cacheId) return;
-    wx.showLoading({ title: '生成 PDF...' });
-    const url = app.globalData.apiBase + '/generate-pdf';
-    // PDF 生成需要文件，简化处理
-    wx.showToast({ title: '请在网页版下载 PDF', icon: 'none' });
-    wx.hideLoading();
+    if (!this.data.cacheId) {
+      wx.showToast({ title: '请先上传账单', icon: 'none' });
+      return;
+    }
+    wx.showLoading({ title: '生成 PDF 中...' });
+    const url = app.globalData.apiBase + '/generate-pdf/' + this.data.cacheId;
+    wx.downloadFile({
+      url,
+      success: (res) => {
+        wx.hideLoading();
+        if (res.statusCode === 200) {
+          wx.openDocument({
+            filePath: res.tempFilePath,
+            showMenu: true,
+            success: () => wx.showToast({ title: 'PDF 已打开 ✅', icon: 'success' }),
+            fail: () => wx.showToast({ title: '请安装 PDF 阅读器打开', icon: 'none' })
+          });
+        } else {
+          wx.showToast({ title: 'PDF 生成失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.hideLoading();
+        wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
+      }
+    });
   },
 
-  shareResult() {
-    if (!this.data.analysisData) return;
-    wx.showShareMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage', 'shareTimeline']
-    });
+  async createShareSnapshot(data) {
+    try {
+      const res = await request('/share', {
+        method: 'POST',
+        data: { data }
+      });
+      if (res.success) {
+        this.setData({ shareId: res.share_id });
+      }
+    } catch (e) {
+      // 静默失败，不影响主流程
+      console.warn('分享快照创建失败:', e);
+    }
   },
 
   resetAll() {
@@ -350,8 +407,11 @@ Page({
       analysisData: null, cacheId: null,
       healthScore: null, healthGrade: '', healthText: '',
       stats: [], categories: [], budgetComparison: null,
+      apiBase: '',
       chartPieUrl: '', chartFoodUrl: '', chartWeeklyUrl: '',
       chartIncomeUrl: '', chartAccountUrl: '', chartHeatmapUrl: '', chartBudgetUrl: '',
+      chartScoreUrl: '',
+      shareId: '',
       simResult: null, tabActive: 'overview'
     });
   }

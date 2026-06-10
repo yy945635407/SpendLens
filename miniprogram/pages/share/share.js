@@ -12,7 +12,7 @@ Page({
   },
 
   onLoad(options) {
-    const shareId = options.id;
+    const shareId = options.shareId;
     if (!shareId) {
       this.setData({ error: '分享链接无效' });
       return;
@@ -22,7 +22,7 @@ Page({
 
   async loadShare(shareId) {
     try {
-      const res = await request(`/share/${shareId}`);
+      const res = await request(`/api/share/${shareId}`);
       if (res.error) {
         this.setData({ error: res.error });
         return;
