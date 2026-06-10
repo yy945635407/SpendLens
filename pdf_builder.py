@@ -15,16 +15,23 @@ def _find_pdf_font():
         '/Library/Fonts/Arial Unicode.ttf',
         '/System/Library/Fonts/PingFang.ttc',
         '/System/Library/Fonts/STHeiti Light.ttc',
-        # Linux (Railway / Ubuntu)
+        # Linux (Railway / Ubuntu) — Noto CJK
         '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
         '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
         '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+        # Linux — WenQuanYi (更轻量可靠)
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
     ] + glob.glob('/usr/share/fonts/truetype/noto/NotoSans*') \
-      + glob.glob('/usr/share/fonts/opentype/noto/NotoSans*')
+      + glob.glob('/usr/share/fonts/opentype/noto/NotoSans*') \
+      + glob.glob('/usr/share/fonts/truetype/wqy/*.ttc') \
+      + glob.glob('/usr/share/fonts/truetype/wqy/*.ttf') \
+      + glob.glob('/usr/share/fonts/**/*.ttc') \
+      + glob.glob('/usr/share/fonts/**/*.ttf')
     for fp in candidates:
         if os.path.isfile(fp):
             return fp
-    raise FileNotFoundError('未找到中文字体，请安装 fonts-noto-cjk 或放置字体到 fonts/ 目录')
+    raise FileNotFoundError('未找到中文字体，请安装 fonts-wqy-zenhei 或放置字体到 fonts/ 目录')
 
 
 PDF_FONT_PATH = _find_pdf_font()

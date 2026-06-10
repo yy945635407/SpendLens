@@ -11,10 +11,19 @@
     <view class="desc">{{hasFile ? fileSize + ' · 点击更换' : '支持 .xlsx / .xls 格式 · 从微信聊天文件选择'}}</view>
   </view>
 
-  <!-- 加载 -->
-  <view class="loading-wrap" wx:if="{{loading}}">
-    <view class="spinner"></view>
-    <view style="color:var(--muted);font-size:26rpx;">正在分析账单数据…</view>
+  <!-- 加载 / 进度弹窗 -->
+  <view class="loading-overlay" wx:if="{{loading || showProgress}}">
+    <view class="loading-card">
+      <view class="loading-char-wrap">
+        <text class="loading-runner">🦴</text>
+        <view class="loading-ground"></view>
+      </view>
+      <view class="loading-title">{{progressTitle}}</view>
+      <view class="loading-sub">{{progressSub}}</view>
+      <view class="loading-dots">
+        <view class="dot" wx:for="{{[1,2,3,4]}}" wx:key="*this" style="animation-delay:{{item*0.15}}s;"></view>
+      </view>
+    </view>
   </view>
 
   <!-- 分析结果 -->
@@ -39,6 +48,7 @@
       <!-- 统计卡片 -->
       <view class="stats-grid">
         <view class="stat-card" wx:for="{{stats}}" wx:key="label" style="border-left-color:{{item.accent}};">
+          <view class="stat-icon" style="color:{{item.color}};">{{item.icon}}</view>
           <view class="stat-value" style="color:{{item.color}};">{{item.value}}</view>
           <view class="stat-label">{{item.label}}</view>
           <view class="stat-sub">{{item.sub}}</view>
@@ -82,10 +92,10 @@
 
       <!-- 操作按钮 -->
       <view class="btn-row">
-        <button class="btn btn-primary" bindtap="generatePPT">✨ 生成 PPT</button>
-        <button class="btn btn-secondary" bindtap="generatePDF">📄 下载 PDF</button>
-        <button class="btn btn-secondary" open-type="share">💌 转发给好友</button>
-        <button class="btn btn-secondary" bindtap="resetAll">🔄 重传</button>
+        <button class="btn btn-primary" bindtap="generatePPT">生成 PPT</button>
+        <button class="btn btn-secondary" bindtap="generatePDF">下载 PDF</button>
+        <button class="btn btn-secondary" open-type="share">转发给好友</button>
+        <button class="btn btn-secondary" bindtap="resetAll">重新上传</button>
       </view>
     </view>
 

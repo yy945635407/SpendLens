@@ -9,6 +9,9 @@ Page({
     fileName: '',
     fileSize: '',
     loading: false,
+    showProgress: false,
+    progressTitle: '正在分析账单…',
+    progressSub: '',
     tabActive: 'overview',  // overview | budget | rules | simulate
 
     // 分析数据
@@ -91,13 +94,23 @@ Page({
 
   // ============ 分析 ============
   async runAnalysis(filePath) {
-    this.setData({ loading: true });
+    this.setData({
+      loading: true,
+      showProgress: true,
+      progressTitle: '正在分析账单…',
+      progressSub: '上传文件中…'
+    });
 
     try {
       const result = await uploadFile(filePath);
+
+      this.setData({ progressSub: '计算统计数据…' });
+
       const d = result.data;
       app.globalData.analysisData = d;
       app.globalData.cacheId = result.cache_id;
+
+      this.setData({ progressSub: '生成健康评分…' });
 
       this.setData({
         loading: false,
@@ -119,21 +132,22 @@ Page({
       // 自动创建分享快照
       this.createShareSnapshot(d);
 
-      wx.showToast({ title: '分析完成 ✅', icon: 'success' });
+      this.setData({ showProgress: false });
+      wx.showToast({ title: '分析完成', icon: 'success' });
     } catch (err) {
-      this.setData({ loading: false });
+      this.setData({ loading: false, showProgress: false });
       wx.showToast({ title: '分析失败: ' + err.message, icon: 'none', duration: 3000 });
     }
   },
 
   buildStats(d) {
     return [
-      { label:'💖 总收入', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4' },
-      { label:'🌸 总支出', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A' },
-      { label:'🎀 结余', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2' },
-      { label:'🍰 日均', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6' },
-      { label:'💕 最大类', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3' },
-      { label:'✨ 交易', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E' }
+      { label:'Income', value: fmtMoney(d.total_income), sub: d.income_count+'笔', color:'#7BC8A4', accent:'#7BC8A4', icon:'↓' },
+      { label:'Expense', value: fmtMoney(d.total_expense), sub: d.expense_count+'笔', color:'#FF6B8A', accent:'#FF6B8A', icon:'↑' },
+      { label:'Balance', value: fmtMoney(d.balance), sub: '储蓄率 '+d.savings_rate+'%', color:'#FF85A2', accent:'#FF85A2', icon:'◎' },
+      { label:'Daily Avg', value: fmtMoney(d.daily_avg), sub: d.month || '', color:'#FFB3C6', accent:'#FFB3C6', icon:'◉' },
+      { label:'Top Category', value: (d.cat1_list[0]||['-'])[0], sub: fmtMoney((d.cat1_list[0]||[0,0])[1]), color:'#FF7EB3', accent:'#FF7EB3', icon:'◆' },
+      { label:'Transactions', value: d.transaction_count+'笔', sub: d.income_count+'收·'+d.expense_count+'支', color:'#C4909E', accent:'#C4909E', icon:'◈' }
     ];
   },
 
@@ -333,17 +347,32 @@ Page({
       wx.showToast({ title: '请先上传账单', icon: 'none' });
       return;
     }
-    wx.showLoading({ title: '生成 PPT 中...' });
+    this.setData({
+      showProgress: true,
+      progressTitle: '正在生成 PPT…',
+      progressSub: '分析数据 · 绘制图表 · 排版中'
+    });
+    // 模拟进度更新
+    const steps = ['分析数据中…', '绘制图表中…', '排版幻灯片…', '打包完成'];
+    let step = 0;
+    const timer = setInterval(() => {
+      if (step < steps.length) {
+        this.setData({ progressSub: steps[step] });
+        step++;
+      }
+    }, 800);
+
     const url = app.globalData.apiBase + '/generate-ppt/' + this.data.cacheId;
     wx.downloadFile({
       url,
       success: (res) => {
-        wx.hideLoading();
+        clearInterval(timer);
+        this.setData({ showProgress: false });
         if (res.statusCode === 200) {
           wx.openDocument({
             filePath: res.tempFilePath,
             showMenu: true,
-            success: () => wx.showToast({ title: 'PPT 已打开 ✅', icon: 'success' }),
+            success: () => wx.showToast({ title: 'PPT 已打开', icon: 'success' }),
             fail: () => wx.showToast({ title: '请安装 WPS 或 Office 打开', icon: 'none' })
           });
         } else {
@@ -351,7 +380,8 @@ Page({
         }
       },
       fail: () => {
-        wx.hideLoading();
+        clearInterval(timer);
+        this.setData({ showProgress: false });
         wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
       }
     });
@@ -362,17 +392,31 @@ Page({
       wx.showToast({ title: '请先上传账单', icon: 'none' });
       return;
     }
-    wx.showLoading({ title: '生成 PDF 中...' });
+    this.setData({
+      showProgress: true,
+      progressTitle: '正在生成 PDF…',
+      progressSub: '分析数据 · 渲染图表 · 排版中'
+    });
+    const steps = ['分析数据中…', '渲染图表中…', '排版页面中…', '打包完成'];
+    let step = 0;
+    const timer = setInterval(() => {
+      if (step < steps.length) {
+        this.setData({ progressSub: steps[step] });
+        step++;
+      }
+    }, 800);
+
     const url = app.globalData.apiBase + '/generate-pdf/' + this.data.cacheId;
     wx.downloadFile({
       url,
       success: (res) => {
-        wx.hideLoading();
+        clearInterval(timer);
+        this.setData({ showProgress: false });
         if (res.statusCode === 200) {
           wx.openDocument({
             filePath: res.tempFilePath,
             showMenu: true,
-            success: () => wx.showToast({ title: 'PDF 已打开 ✅', icon: 'success' }),
+            success: () => wx.showToast({ title: 'PDF 已打开', icon: 'success' }),
             fail: () => wx.showToast({ title: '请安装 PDF 阅读器打开', icon: 'none' })
           });
         } else {
@@ -380,7 +424,8 @@ Page({
         }
       },
       fail: () => {
-        wx.hideLoading();
+        clearInterval(timer);
+        this.setData({ showProgress: false });
         wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
       }
     });
@@ -404,6 +449,7 @@ Page({
   resetAll() {
     this.setData({
       hasFile: false, fileName: '', fileSize: '',
+      loading: false, showProgress: false,
       analysisData: null, cacheId: null,
       healthScore: null, healthGrade: '', healthText: '',
       stats: [], categories: [], budgetComparison: null,

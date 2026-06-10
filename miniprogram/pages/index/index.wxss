@@ -1,5 +1,61 @@
 /* 首页样式 */
 
+/* ====== 加载/进度弹窗 ====== */
+.loading-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(255,240,245,0.92);
+  backdrop-filter: blur(8rpx);
+  display: flex; align-items: center; justify-content: center; z-index: 999;
+}
+.loading-card {
+  width: 520rpx; background: #FFF; border-radius: 48rpx; padding: 60rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 16rpx 64rpx rgba(255,107,138,0.18);
+  border: 2rpx solid rgba(255,107,138,0.10);
+}
+.loading-char-wrap {
+  position: relative; width: 200rpx; height: 120rpx; margin: 0 auto 32rpx;
+  overflow: visible;
+}
+.loading-runner {
+  position: absolute; bottom: 24rpx; left: 0;
+  font-size: 72rpx;
+  animation: shinRun 0.7s ease-in-out infinite;
+}
+.loading-ground {
+  position: absolute; bottom: 0; left: 10%; width: 80%; height: 6rpx;
+  background: linear-gradient(90deg, transparent, #FFB3C6, transparent);
+  border-radius: 3rpx;
+  animation: groundPulse 0.7s ease-in-out infinite;
+}
+@keyframes shinRun {
+  0%, 100% { transform: translateX(0) translateY(0) rotate(0deg); }
+  25% { transform: translateX(40rpx) translateY(-24rpx) rotate(-8deg); }
+  50% { transform: translateX(80rpx) translateY(0) rotate(0deg); }
+  75% { transform: translateX(120rpx) translateY(-24rpx) rotate(8deg); }
+}
+@keyframes groundPulse {
+  0%, 100% { opacity: 0.4; transform: scaleX(1); }
+  50% { opacity: 1; transform: scaleX(1.3); }
+}
+.loading-title {
+  font-size: 32rpx; font-weight: 700; color: #5C2D3E; margin-bottom: 8rpx;
+}
+.loading-sub {
+  font-size: 24rpx; color: #C4909E; margin-bottom: 28rpx;
+}
+.loading-dots {
+  display: flex; justify-content: center; gap: 12rpx;
+}
+.loading-dots .dot {
+  width: 14rpx; height: 14rpx; background: #FF6B8A; border-radius: 50%;
+  animation: dotBounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes dotBounce {
+  0% { transform: translateY(0); opacity: 0.3; }
+  100% { transform: translateY(-16rpx); opacity: 1; }
+}
+
 /* 统计卡片 */
 .stat-card {
   width: calc(33.33% - 12rpx);
@@ -8,6 +64,7 @@
   border-left: 6rpx solid var(--primary); margin-bottom: 16rpx;
 }
 .stat-value { font-size: 36rpx; font-weight: 700; margin-bottom: 8rpx; }
+.stat-icon { font-size: 28rpx; margin-bottom: 4rpx; font-weight: 600; }
 .stat-label { font-size: 22rpx; color: var(--muted); }
 .stat-sub { font-size: 20rpx; color: var(--primary); }
 

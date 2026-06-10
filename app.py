@@ -145,6 +145,7 @@ def _generate_score_ring(health):
         rgb = (0.48, 0.78, 0.64)  # default green
 
     fig, ax = plt.subplots(figsize=(3, 3))
+    fig.patch.set_facecolor('none')
     ax.set_xlim(-1.3, 1.3)
     ax.set_ylim(-1.3, 1.3)
     ax.set_aspect('equal')

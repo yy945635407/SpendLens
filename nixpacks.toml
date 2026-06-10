@@ -1,11 +1,12 @@
 # Nixpacks config for Railway
 [phases.setup]
-aptPackages = ["fonts-noto-cjk", "fonts-noto", "fontconfig"]
+aptPackages = ["fonts-wqy-zenhei", "fonts-wqy-microhei", "fonts-noto-cjk", "fontconfig"]
 
 [phases.install]
 cmds = [
     "fc-cache -fv",
-    "rm -rf /root/.cache/matplotlib /tmp/matplotlib-* 2>/dev/null || true",
+    "rm -rf /root/.cache/matplotlib /root/.matplotlib /tmp/matplotlib-* 2>/dev/null || true",
+    "python -c \"import matplotlib; matplotlib.font_manager._load_fontmanager(try_read_cache=False)\" 2>/dev/null || true",
     "pip install -r requirements.txt"
 ]
 

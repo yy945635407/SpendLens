@@ -30,6 +30,11 @@ def _find_cn_font():
         # 兜底：扫描所有 ttc/ttf
         glob.glob('/usr/share/fonts/**/*.ttc') +
         glob.glob('/usr/share/fonts/**/*.ttf') +
+        # WenQuanYi 字体（Railway 更可靠）
+        glob.glob('/usr/share/fonts/truetype/wqy/wqy-zenhei*') +
+        glob.glob('/usr/share/fonts/truetype/wqy/wqy-microhei*') +
+        glob.glob('/usr/share/fonts/wenquanyi/**/*.ttc') +
+        glob.glob('/usr/share/fonts/wenquanyi/**/*.ttf') +
         # 项目自带字体
         glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts', '*.ttf'))
     )
