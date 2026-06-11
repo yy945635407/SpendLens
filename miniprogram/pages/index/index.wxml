@@ -9,6 +9,7 @@
     <view class="icon">{{hasFile ? '✅' : '📁'}}</view>
     <view class="title">{{hasFile ? fileName : '导入 iCost 账单文件'}}</view>
     <view class="desc">{{hasFile ? fileSize + ' · 点击更换' : '支持 .xlsx / .xls 格式 · 从微信聊天文件选择'}}</view>
+    <view class="desc" style="font-size:20rpx;color:#C4909E;margin-top:8rpx;">⚠️ 请上传各记账软件导出的账单文件，并非银行流水单</view>
   </view>
 
   <!-- 加载 / 进度弹窗 -->
@@ -117,8 +118,8 @@
           总计：¥{{budgetComparison.total_actual}} / ¥{{budgetComparison.total_budget}} · {{budgetComparison.total_pct}}%
         </view>
         <view class="budget-comp-item" wx:for="{{budgetComparison.categories}}" wx:key="category" wx:for-item="c">
-          <view class="comp-label">{{c.status==='over'?'🔴':c.status==='ok'?'🟢':'⚪'}} {{c.category}}</view>
-          <view class="bar-wrap" style="flex:1;margin:0 12rpx;"><view class="bar-fill" style="width:{{c.actual/(c.budget||1)*100}}%;background:{{c.status==='over'?'var(--primary)':'var(--positive)'}};"></view></view>
+          <view class="comp-label"><text style="color:{{c.status==='over'?'#FF6B8A':c.status==='ok'?'#7BC8A4':'#C4909E'}};">{{c.status==='over'?'●':c.status==='ok'?'●':'○'}}</text> {{c.category}}</view>
+          <view class="bar-wrap" style="flex:1;margin:0 12rpx;"><view class="bar-fill" style="width:{{c.status==='no_budget'?100:(c.actual/(c.budget||1)*100)}}%;background:{{c.status==='over'?'var(--primary)':'var(--positive)'}};"></view></view>
           <view class="comp-amt">¥{{c.actual}}</view>
           <view class="comp-pct" wx:if="{{c.pct_used !== null}}">{{c.pct_used}}%</view>
           <view class="comp-pct no-budget" wx:else>未列入预算</view>

@@ -75,30 +75,112 @@ def _add_text(slide, text, x, y, w, h, size=14, color=C['text'], bold=False,
     return tf
 
 
+def _add_status_dot(slide, x, y, size, color):
+    """添加一个小圆点用于状态指示（高对比度替代emoji）。"""
+    dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, x, y, size, size)
+    dot.fill.solid()
+    dot.fill.fore_color.rgb = color
+    dot.line.fill.background()
+    return dot
+
+
 def _add_multiline(slide, lines, x, y, w, h, size=13, color=C['text'],
-                   font_name='Arial'):
-    """添加多行文本，lines 为 [(text, bold, color), ...]"""
+                   font_name='Arial', auto_fit=True):
+    """添加多行文本，lines 为 [(text, bold, color), ...]。
+
+    当 auto_fit=True 时，自动缩小字号以确保所有内容在框内。
+    """
     txBox = slide.shapes.add_textbox(x, y, w, h)
     tf = txBox.text_frame
     tf.word_wrap = True
+
+    # 自动适配字号
+    actual_size = size
+    if auto_fit and lines:
+        non_empty = [l for l in lines if l[0]]
+        est_lines = len(non_empty)
+        line_height = Pt(size) * 1.35  # 估算行高
+        total_h = line_height * est_lines
+        if total_h > h:
+            # 缩小字号使其适配
+            ratio = h / total_h
+            actual_size = max(7, int(size * ratio * 0.85))
+
     for i, (text, bold, clr) in enumerate(lines):
         if i == 0:
             p = tf.paragraphs[0]
         else:
             p = tf.add_paragraph()
         p.text = text
-        p.font.size = Pt(size)
+        p.font.size = Pt(actual_size)
         p.font.color.rgb = clr
         p.font.bold = bold
         p.font.name = font_name
+        # 减小段落间距
+        p.space_before = Pt(0)
+        p.space_after = Pt(1)
     txBox.margin_left = Pt(0)
     txBox.margin_top = Pt(0)
+    txBox.margin_bottom = Pt(0)
     return txBox
 
 
-def _add_image(slide, buf, x, y, w, h):
-    """从 BytesIO 添加图片。"""
+def _add_image(slide, buf, x, y, w=None, h=None, max_w=None, max_h=None):
+    """从 BytesIO 添加图片，自动保持宽高比。
+
+    指定 w 则自动算 h；指定 h 则自动算 w；同时指定则两者都使用。
+    指定 max_w / max_h 会在超出时等比缩小。
+    """
+    from PIL import Image as PILImage
+    buf.seek(0)
+    img = PILImage.open(buf)
+    iw, ih = img.size
+    buf.seek(0)
+    if w is not None and h is None:
+        h = int(w * ih / iw)
+    elif h is not None and w is None:
+        w = int(h * iw / ih)
+    elif w is None and h is None:
+        raise ValueError('必须指定 w 或 h')
+    # 超出最大边界时等比缩小
+    if max_w is not None and w > max_w:
+        scale = max_w / w
+        w = max_w
+        h = int(h * scale)
+    if max_h is not None and h > max_h:
+        scale = max_h / h
+        h = max_h
+        w = int(w * scale)
     return slide.shapes.add_picture(buf, x, y, w, h)
+
+
+def _ensure_text_on_top(slide):
+    """将所有文本框移到 Z-order 最顶层，确保文字不被图表/形状遮挡。"""
+    spTree = slide.shapes._spTree
+    ns_a = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+    children = list(spTree)
+    text_els = []
+    other_els = []
+
+    for child in children:
+        tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+        if tag == 'sp':
+            txBody = child.find(f'{{{ns_a}}}txBody')
+            if txBody is not None:
+                text_els.append(child)
+                continue
+        other_els.append(child)
+
+    if not text_els:
+        return
+
+    # Remove all, re-add: non-text first, text last (on top)
+    for child in children:
+        spTree.remove(child)
+    for el in other_els:
+        spTree.append(el)
+    for el in text_els:
+        spTree.append(el)
 
 
 def build_ppt(data, charts):
@@ -124,17 +206,6 @@ def build_ppt(data, charts):
     bg = slide.background
     bg.fill.solid()
     bg.fill.fore_color.rgb = C['darkBg']
-
-    # Subtle decorative circles — pushed to edges, much lighter
-    for x, y, r, clr in [
-        (-1.8, -1.8, 3.0, RGBColor(0x8A, 0x4A, 0x5E)),    # muted darker pink, far corner
-        (7.8, -1.0, 2.2, RGBColor(0x7A, 0x4A, 0x58)),     # top-right, muted
-        (-0.8, 4.2, 1.5, RGBColor(0x90, 0x55, 0x68)),     # bottom-left, muted
-    ]:
-        shape = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(x), Inches(y), Inches(r*2), Inches(r*2))
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = clr
-        shape.line.fill.background()
 
     # Tiny accent dots
     for dx, dy in [(3.0, 2.8), (6.5, 3.6), (2.0, 4.2)]:
@@ -186,18 +257,26 @@ def build_ppt(data, charts):
         cx = sx + col * (cw + gx)
         cy = sy + row * (ch + gy)
         _add_rect(slide, cx, cy, cw, ch, fill=C['card'], shadow=True, accent=accent)
-        # Value
-        val_size = 20 if len(str(value)) < 10 else 17
-        _add_text(slide, value, cx + Inches(0.3), cy + Inches(0.1), cw - Inches(0.45), Inches(0.4),
+        # Value — dynamic sizing to prevent overflow
+        v_len = len(str(value))
+        if v_len < 8:
+            val_size = 20
+        elif v_len < 10:
+            val_size = 17
+        elif v_len < 12:
+            val_size = 15
+        else:
+            val_size = 13
+        _add_text(slide, value, cx + Inches(0.3), cy + Inches(0.08), cw - Inches(0.45), Inches(0.42),
                   size=val_size, color=accent, bold=True)
         # Label (Chinese)
-        _add_text(slide, label, cx + Inches(0.3), cy + Inches(0.55), cw - Inches(0.45), Inches(0.2),
+        _add_text(slide, label, cx + Inches(0.3), cy + Inches(0.54), cw - Inches(0.45), Inches(0.18),
                   size=11, color=C['text'])
         # English subtitle
-        _add_text(slide, en, cx + Inches(0.3), cy + Inches(0.72), cw - Inches(0.45), Inches(0.18),
+        _add_text(slide, en, cx + Inches(0.3), cy + Inches(0.74), cw - Inches(0.45), Inches(0.16),
                   size=8, color=C['muted'])
         # Sub info
-        _add_text(slide, sub, cx + Inches(0.3), cy + Inches(0.92), cw - Inches(0.45), Inches(0.2),
+        _add_text(slide, sub, cx + Inches(0.3), cy + Inches(0.92), cw - Inches(0.45), Inches(0.22),
                   size=10, color=accent)
 
     # ---- 健康评分卡片（底部横条） ----
@@ -233,7 +312,8 @@ def build_ppt(data, charts):
 
     _add_text(slide, '支出结构分析', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
               size=28, color=C['text'], bold=True)
-    _add_image(slide, charts['pie_spending'], Inches(0.3), Inches(1.0), Inches(5.8), Inches(4.2))
+    _add_image(slide, charts['pie_spending'], Inches(0.3), Inches(1.0),
+               w=Inches(5.5), max_h=Inches(4.0))
 
     top3 = data['cat1_list'][:3]
     total_exp = data['total_expense']
@@ -276,7 +356,8 @@ def build_ppt(data, charts):
     _add_text(slide, f'日均餐饮 ¥{data["daily_food"]:.2f} · 结构健康', Inches(0.6), Inches(0.7),
               Inches(6), Inches(0.25), size=11, color=C['secondary'])
 
-    _add_image(slide, charts['bar_food'], Inches(0.3), Inches(1.1), Inches(5.2), Inches(4.2))
+    _add_image(slide, charts['bar_food'], Inches(0.3), Inches(1.1),
+               w=Inches(5.0), max_h=Inches(4.2))
     _add_rect(slide, Inches(5.8), Inches(1.1), Inches(3.8), Inches(3.8), fill=C['card'], shadow=True)
 
     _add_text(slide, '💡 餐饮分析', Inches(6.1), Inches(1.25), Inches(3.3), Inches(0.35),
@@ -315,7 +396,8 @@ def build_ppt(data, charts):
     _add_text(slide, f'周均支出 ¥{weekly_avg:,.0f} · {peak_week[0]} 社保扣款周最高',
               Inches(0.6), Inches(0.85), Inches(6), Inches(0.3), size=13, color=C['muted'])
 
-    _add_image(slide, charts['line_weekly'], Inches(0.3), Inches(1.2), Inches(7.8), Inches(4.0))
+    _add_image(slide, charts['line_weekly'], Inches(0.3), Inches(1.2),
+               w=Inches(7.0), max_h=Inches(4.0))
 
     # Peak callout + analysis
     _add_rect(slide, Inches(8.4), Inches(1.2), Inches(1.3), Inches(2.2), fill=C['card'], shadow=True)
@@ -371,7 +453,8 @@ def build_ppt(data, charts):
     _add_text(slide, f'{data["account_list"][0][0]} 承担 {data["account_list"][0][1]/data["total_expense"]*100:.1f}% 的家庭支出',
               Inches(0.6), Inches(0.85), Inches(6), Inches(0.3), size=13, color=C['muted'])
 
-    _add_image(slide, charts['bar_account'], Inches(0.3), Inches(1.3), Inches(5.8), Inches(4.0))
+    _add_image(slide, charts['bar_account'], Inches(0.3), Inches(1.3),
+               w=Inches(5.8), max_h=Inches(3.8))
 
     acc_colors = [C['primary'], C['pink2'], C['pink3'], C['rose']]
     for i, (acct, amt) in enumerate(data['account_list'][:4]):
@@ -405,7 +488,8 @@ def build_ppt(data, charts):
     _add_text(slide, f'总收入 ¥{data["total_income"]:,.2f} · 月结余 ¥{data["balance"]:,.2f}',
               Inches(0.6), Inches(0.85), Inches(6), Inches(0.3), size=13, color=C['secondary'])
 
-    _add_image(slide, charts['doughnut_income'], Inches(0.0), Inches(1.3), Inches(5.5), Inches(3.9))
+    _add_image(slide, charts['doughnut_income'], Inches(0.3), Inches(1.3),
+               h=Inches(3.8), max_w=Inches(3.2))
 
     # 动态计算收入明细间距
     inc_list = data['income_list'][:6]  # 最多显示6个收入来源
@@ -422,22 +506,22 @@ def build_ppt(data, charts):
     # 每个条目占用的垂直空间
     item_h = available_h / max(inc_count, 1)
 
-    _add_rect(slide, Inches(5.8), card_top, Inches(3.8), card_h, fill=C['card'], shadow=True)
-    _add_text(slide, '收入明细', Inches(6.1), Inches(1.45), Inches(3.3), Inches(0.35),
+    _add_rect(slide, Inches(4.4), card_top, Inches(5.2), card_h, fill=C['card'], shadow=True)
+    _add_text(slide, '收入明细', Inches(4.7), Inches(1.45), Inches(4.5), Inches(0.35),
               size=16, color=C['text'], bold=True)
 
-    inc_colors = [C['positive'], C['primary'], C['pink3'], C['muted']]
+    inc_colors = [C['positive'], C['primary'], C['pink3'], C['muted'], C['rose'], C['pink2']]
     for i, (acct, amt) in enumerate(inc_list):
         pct = amt / inc_total * 100 if inc_total > 0 else 0
         iiy = content_top + i * item_h
         # 自适应字号
         dyn_size = max(9, min(12, int(item_h / 12700 * 0.38)))
-        _add_text(slide, acct, Inches(6.2), iiy, Inches(1.8), Inches(item_h * 0.45),
+        _add_text(slide, acct, Inches(4.7), iiy, Inches(2.5), Inches(item_h * 0.45),
                   size=dyn_size, color=C['text'])
-        _add_text(slide, f'¥{amt:,.2f}', Inches(7.2), iiy, Inches(2.2), Inches(item_h * 0.45),
+        _add_text(slide, f'¥{amt:,.2f}', Inches(7.5), iiy, Inches(1.8), Inches(item_h * 0.45),
                   size=dyn_size, color=C['text'], bold=True, align=PP_ALIGN.RIGHT)
-        _add_text(slide, f'{pct:.1f}%', Inches(6.2), iiy + item_h * 0.48, Inches(2.7), Inches(item_h * 0.35),
-                  size=max(8, dyn_size - 2), color=inc_colors[i])
+        _add_text(slide, f'{pct:.1f}%', Inches(4.7), iiy + item_h * 0.48, Inches(2.5), Inches(item_h * 0.35),
+                  size=max(8, dyn_size - 2), color=inc_colors[i % len(inc_colors)])
 
     # Income diversity analysis
     if inc_count >= 3:
@@ -447,7 +531,7 @@ def build_ppt(data, charts):
     else:
         inc_analysis = f'⚠️ 收入来源单一，建议开拓副业'
     inc_analysis += f' | 结余 ¥{data["balance"]:,.0f}'
-    _add_text(slide, inc_analysis, Inches(6.2), Inches(5.0), Inches(3.2), Inches(0.25),
+    _add_text(slide, inc_analysis, Inches(4.7), Inches(5.0), Inches(4.5), Inches(0.25),
               size=9, color=C['text'])
 
     # ================================================================
@@ -466,38 +550,49 @@ def build_ppt(data, charts):
             _add_text(slide, f'总支出 ¥{bc["total_actual"]:,.0f} / 预算 ¥{bc["total_budget"]:,.0f} · {bc["total_pct"]}%',
                       Inches(0.6), Inches(0.85), Inches(6), Inches(0.3), size=13, color=status_color)
 
-        _add_image(slide, charts['budget_bar'], Inches(0.3), Inches(1.2), Inches(6.5), Inches(4.0))
+        _add_image(slide, charts['budget_bar'], Inches(0.3), Inches(1.2),
+                   w=Inches(6.2), max_h=Inches(4.0))
 
-        # 右侧：只显示有预算的分类，动态调整行间距
+        # 右侧：只显示有预算的分类，用彩色圆点替代emoji（高对比度）
         budgeted = [c for c in bc.get('categories', []) if c['status'] != 'no_budget']
         if budgeted:
-            # 动态计算间距：确保所有内容在白色卡片内
             count = len(budgeted)
             card_top = Inches(1.2)
             card_h = Inches(4.0)
-            content_top = Inches(1.8)
-            available_h = card_h - (content_top - card_top) - Inches(0.15)  # 可用高度
-            line_h = available_h / max(count * 2 + count - 1, 1)  # 每行高度（含间距）
+            card_x = Inches(7.0)
+            card_w = Inches(2.7)
 
-            _add_rect(slide, Inches(7.0), card_top, Inches(2.7), card_h, fill=C['card'], shadow=True)
+            _add_rect(slide, card_x, card_top, card_w, card_h, fill=C['card'], shadow=True)
             _add_text(slide, '预算执行', Inches(7.2), Inches(1.3), Inches(2.4), Inches(0.35),
                       size=15, color=C['text'], bold=True)
 
-            # 行间距自适应字号
-            dyn_size = max(8, min(11, int(line_h / 12700 * 0.45)))  # EMU换算
+            # 动态计算每行高度
+            content_top_emu = Inches(1.85)
+            content_bottom_emu = Inches(5.05)
+            available_h_emu = content_bottom_emu - content_top_emu
+            row_h = available_h_emu / max(count, 1)
 
-            lines = []
-            for c in budgeted:
-                if c['status'] == 'over':
-                    lines.append((f"🔴 {c['category']}", True, C['primary']))
-                    lines.append((f'超支 ¥{abs(c["diff"]):.0f} ({c["pct_used"]}%)', False, C['primary']))
-                else:
-                    lines.append((f"🟢 {c['category']}", True, C['secondary']))
-                    lines.append((f'剩余 ¥{abs(c["diff"]):.0f} ({c["pct_used"]}%)', False, C['secondary']))
-                lines.append(('', False, C['text']))
+            for i, c in enumerate(budgeted):
+                row_y = content_top_emu + i * row_h
+                is_over = c['status'] == 'over'
+                dot_color = C['primary'] if is_over else C['secondary']
+                text_color = C['primary'] if is_over else C['secondary']
+                label = '超支' if is_over else '剩余'
+                diff_val = abs(c['diff']) if c['diff'] is not None else 0
 
-            if lines:
-                _add_multiline(slide, lines[:-1], Inches(7.2), content_top, Inches(2.35), available_h, size=dyn_size)
+                # 彩色实心圆点（取代看不清的emoji）
+                dot_size = Inches(0.16)
+                _add_status_dot(slide, Inches(7.3), row_y + row_h * 0.1, dot_size, dot_color)
+
+                # 类别名
+                cat_size = max(10, min(13, int(row_h / 12700 * 0.55)))
+                _add_text(slide, c['category'], Inches(7.55), row_y, Inches(1.5), row_h * 0.55,
+                          size=cat_size, color=C['text'], bold=True)
+                # 金额信息
+                info = f'{label} ¥{diff_val:,.0f}（{c["pct_used"]}%）'
+                info_size = max(8, cat_size - 2)
+                _add_text(slide, info, Inches(7.55), row_y + row_h * 0.52, Inches(1.9), row_h * 0.42,
+                          size=info_size, color=text_color)
         else:
             # 没有预算分类时显示提示
             _add_rect(slide, Inches(7.0), Inches(1.2), Inches(2.7), Inches(3.0), fill=C['card'], shadow=True)
@@ -576,12 +671,22 @@ def build_ppt(data, charts):
         conclusions.append(('🌸', f'财务健康评分 {h["score"]} 分 · {h["grade"]} · {h["grade_text"]}',
             f'综合储蓄率、支出结构、收入多样性和消费稳定性评估，财务状态{h["grade_text"]} 💖'))
 
+    # 动态间距：根据结论数量自适应
+    n_conclusions = len(conclusions)
+    summary_start = Inches(1.35)
+    summary_end = Inches(5.05)  # 留白给底部装饰线
+    item_spacing = (summary_end - summary_start) / max(n_conclusions, 1)
+    title_h = item_spacing * 0.48
+    desc_h = item_spacing * 0.42
+    title_size = max(10, min(13, int(item_spacing / 12700 * 0.55)))
+    desc_size = max(8, title_size - 2)
+
     for i, (icon, title, desc) in enumerate(conclusions):
-        cy = Inches(1.35) + i * Inches(0.63)
-        _add_text(slide, icon + '  ' + title, Inches(0.8), cy, Inches(8.8), Inches(0.28),
-                  size=12, color=RGBColor(0xFF, 0xFF, 0xFF), bold=True)
-        _add_text(slide, desc, Inches(0.8), cy + Inches(0.28), Inches(8.8), Inches(0.28),
-                  size=10, color=C['muted'])
+        cy = summary_start + i * item_spacing
+        _add_text(slide, icon + '  ' + title, Inches(0.8), cy, Inches(8.8), title_h,
+                  size=title_size, color=RGBColor(0xFF, 0xFF, 0xFF), bold=True)
+        _add_text(slide, desc, Inches(0.8), cy + title_h, Inches(8.8), desc_h,
+                  size=desc_size, color=C['muted'])
 
     # Bottom line
     line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(2), Inches(5.2), Inches(6), Pt(1))
@@ -589,6 +694,10 @@ def build_ppt(data, charts):
     _add_text(slide, 'Generated by iCost + AI Analysis  ·  YLYT Family',
               Inches(0), Inches(5.3), Inches(10), Inches(0.25),
               size=8, color=C['muted'], align=PP_ALIGN.CENTER)
+
+    # ---- 确保所有文字在最顶层 ----
+    for slide in prs.slides:
+        _ensure_text_on_top(slide)
 
     # ---- 保存 ----
     buf = BytesIO()

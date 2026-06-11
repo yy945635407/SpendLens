@@ -161,7 +161,10 @@ Page({
       wx.showToast({ title: '分析完成', icon: 'success' });
     } catch (err) {
       this.setData({ loading: false, showProgress: false, progressPct: 0 });
-      wx.showToast({ title: '分析失败: ' + err.message, icon: 'none', duration: 3000 });
+      if (!err.aborted) {
+        const reason = err.message || '未知错误';
+        wx.showToast({ title: '分析失败: ' + reason, icon: 'none', duration: 3000 });
+      }
     }
   },
 
@@ -403,10 +406,13 @@ Page({
       } else {
         wx.showToast({ title: 'PPT 生成失败', icon: 'none' });
       }
-    }).catch(() => {
+    }).catch((err) => {
       this._downloadTask = null;
       this.setData({ showProgress: false });
-      wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
+      if (!err || !err.aborted) {
+        const reason = (err && err.message) ? err.message : '网络错误';
+        wx.showToast({ title: 'PPT生成失败: ' + reason, icon: 'none' });
+      }
     });
   },
 
@@ -446,10 +452,13 @@ Page({
       } else {
         wx.showToast({ title: 'PDF 生成失败', icon: 'none' });
       }
-    }).catch(() => {
+    }).catch((err) => {
       this._downloadTask = null;
       this.setData({ showProgress: false });
-      wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
+      if (!err || !err.aborted) {
+        const reason = (err && err.message) ? err.message : '网络错误';
+        wx.showToast({ title: 'PDF生成失败: ' + reason, icon: 'none' });
+      }
     });
   },
 

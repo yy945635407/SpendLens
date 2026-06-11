@@ -5,6 +5,12 @@ from fpdf.enums import XPos, YPos, Align
 import os
 import glob
 
+try:
+    from PIL import Image as PILImage
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
+
 
 def _find_pdf_font():
     """跨平台查找中文字体，返回 ttf 路径。"""
@@ -70,9 +76,6 @@ class BillPDF(FPDF):
         self.set_text_color(*C['muted'])
         self.cell(0, 10, 'SpendLens  ·  账单分析报告', align='C')
         self.ln(8)
-        self.set_draw_color(*C['pink4'])
-        self.line(self.l_margin, self.get_y(), self.w - self.r_margin, self.get_y())
-        self.ln(6)
 
     def footer(self):
         if self.page_no() == 1:
@@ -91,6 +94,31 @@ def _rgb_tuple(val):
     if isinstance(val, tuple):
         return tuple(int(v) for v in val)
     return (0, 0, 0)
+
+
+def _chart_rgb(chart_buf):
+    """Convert chart PNG from RGBA (transparent) to RGB (white background).
+
+    This prevents mobile PDF viewers from rendering transparent areas as
+    opaque artifacts ("贴纸/stickers") that block content.
+    """
+    if not _HAS_PIL:
+        chart_buf.seek(0)
+        return chart_buf
+
+    chart_buf.seek(0)
+    img = PILImage.open(chart_buf)
+    if img.mode == 'RGBA':
+        # Flatten transparency against white background
+        bg = PILImage.new('RGBA', img.size, (255, 255, 255, 255))
+        bg.paste(img, (0, 0), img)
+        img = bg.convert('RGB')
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
+    out = BytesIO()
+    img.save(out, format='PNG')
+    out.seek(0)
+    return out
 
 
 def build_pdf(data, charts):
@@ -113,22 +141,12 @@ def build_pdf(data, charts):
 
     # ================ 封面 ================
     pdf.add_page()
-    # 暗色背景
-    pdf.set_fill_color(*C['darkBg'])
-    pdf.rect(0, 0, PW, PH, 'F')
-
-    # 装饰圆
-    pdf.set_fill_color(*C['primary'])
-    pdf.circle(40, 50, 25, 'F')
-    pdf.set_fill_color(*C['pink3'])
-    pdf.circle(250, 150, 30, 'F')
-
     pdf.set_y(55)
     pdf.set_font('CN', 'B', 32)
-    pdf.set_text_color(*C['white'])
+    pdf.set_text_color(*C['primary'])
     pdf.cell(0, 15, f'{month}  SpendLens', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.set_font('CN', '', 16)
-    pdf.set_text_color(*C['pink4'])
+    pdf.set_text_color(*C['pink2'])
     pdf.cell(0, 10, 'iCost 智能记账 · 让每一笔都清晰可见', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(5)
     pdf.set_font('CN', '', 10)
@@ -137,8 +155,6 @@ def build_pdf(data, charts):
 
     # ================ 概览 ================
     pdf.add_page()
-    pdf.set_fill_color(*C['bg'])
-    pdf.rect(0, 0, PW, PH, 'F')
 
     pdf.set_font('CN', 'B', 22)
     pdf.set_text_color(*C['text'])
@@ -169,22 +185,9 @@ def build_pdf(data, charts):
         x = start_x + (i % 3) * (col_w + gap_x)
         y = 55 + (i // 3) * (row_h + 8)
 
-        pdf.set_xy(x, y)
-        pdf.set_fill_color(*C['white'])
-        pdf.set_draw_color(*accent)
-        pdf.set_line_width(0.6)
-
-        # 左侧 accent bar
-        pdf.set_fill_color(*accent)
-        pdf.rect(x, y, 3, row_h, 'F')
-
-        # 卡片主体
-        pdf.set_fill_color(*C['white'])
-        pdf.rect(x + 3, y, col_w - 3, row_h, 'D')
-
         pdf.set_xy(x + 6, y + 4)
         pdf.set_font('CN', 'B', 15)
-        pdf.set_text_color(*C['text'])
+        pdf.set_text_color(*accent)
         pdf.cell(col_w - 12, 7, value, align='L')
 
         pdf.set_xy(x + 6, y + 14)
@@ -239,20 +242,22 @@ def build_pdf(data, charts):
     pdf.set_text_color(*C['text'])
     pdf.cell(0, 12, '支出结构分析', align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(5)
+    content_y = pdf.get_y()
 
     if charts.get('pie_spending'):
         chart_buf = charts['pie_spending']
         chart_buf.seek(0)
-        pdf.image(chart_buf, x=10, y=pdf.get_y(), w=130)
+        pdf.image(_chart_rgb(chart_buf), x=10, y=content_y, w=130)
 
-    pdf.set_xy(155, 45)
+    pdf.set_xy(155, content_y)
     pdf.set_font('CN', 'B', 13)
     pdf.set_text_color(*C['text'])
     pdf.cell(0, 8, '支出分类明细', align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
+    cat_start_y = pdf.get_y() + 2
     for i, (cat, amt) in enumerate(data.get('cat1_list', [])[:8]):
         pct = amt / data['total_expense'] * 100
-        pdf.set_xy(155, 55 + i * 10)
+        pdf.set_xy(155, cat_start_y + i * 10)
         pdf.set_font('CN', '', 10)
         pdf.set_text_color(*C['text'])
         pdf.cell(55, 7, cat[:8], align='L')
@@ -262,7 +267,9 @@ def build_pdf(data, charts):
     # Spending structure analysis
     top1 = data['cat1_list'][0] if data.get('cat1_list') else ('无', 0)
     top1_pct = top1[1] / data['total_expense'] * 100 if data.get('total_expense', 1) > 0 else 0
-    pdf.set_xy(155, 145)
+    n_cats = min(len(data.get('cat1_list', [])), 8)
+    analysis_y = cat_start_y + n_cats * 10 + 4
+    pdf.set_xy(155, analysis_y)
     pdf.set_font('CN', 'B', 10)
     pdf.set_text_color(*C['text'])
     if top1_pct > 40:
@@ -281,18 +288,19 @@ def build_pdf(data, charts):
     pdf.set_text_color(*C['positive'])
     pdf.cell(0, 8, f'日均餐饮 ¥{data["daily_food"]:.2f}', align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(5)
+    content_y = pdf.get_y()
 
     if charts.get('bar_food'):
         chart_buf = charts['bar_food']
         chart_buf.seek(0)
-        pdf.image(chart_buf, x=10, y=pdf.get_y(), w=140)
+        pdf.image(_chart_rgb(chart_buf), x=10, y=content_y, w=140)
 
     # Food analysis
     food_cats = {c[0]: c[1] for c in data.get('food_list', [])}
     total_food = sum(f[1] for f in data.get('food_list', [])) or 1
     cook_amt = food_cats.get('三餐', 0) + food_cats.get('做饭材料', 0)
     cook_ratio = cook_amt / total_food * 100
-    pdf.set_xy(155, 45)
+    pdf.set_xy(155, content_y)
     pdf.set_font('CN', 'B', 10)
     pdf.set_text_color(*C['text'])
     if cook_ratio > 60:
@@ -310,7 +318,7 @@ def build_pdf(data, charts):
     if charts.get('line_weekly'):
         chart_buf = charts['line_weekly']
         chart_buf.seek(0)
-        pdf.image(chart_buf, x=10, y=pdf.get_y(), w=170)
+        pdf.image(_chart_rgb(chart_buf), x=10, y=pdf.get_y(), w=170)
 
     # Weekly analysis
     wl = data.get('weekly_list', [])
@@ -336,7 +344,7 @@ def build_pdf(data, charts):
 
         chart_buf = charts['heatmap']
         chart_buf.seek(0)
-        pdf.image(chart_buf, x=10, y=pdf.get_y(), w=210)
+        pdf.image(_chart_rgb(chart_buf), x=10, y=pdf.get_y(), w=210)
 
     # ================ 预算对比 ================
     if charts.get('budget_bar') and data.get('budget_comparison'):
@@ -356,7 +364,7 @@ def build_pdf(data, charts):
 
         chart_buf = charts['budget_bar']
         chart_buf.seek(0)
-        pdf.image(chart_buf, x=10, y=pdf.get_y(), w=180)
+        pdf.image(_chart_rgb(chart_buf), x=10, y=pdf.get_y(), w=180)
 
         # Budget analysis
         over_count = sum(1 for c in bc.get('categories', []) if c['status'] == 'over')
@@ -378,23 +386,21 @@ def build_pdf(data, charts):
     # ================ 总结 ================
     pdf.set_auto_page_break(auto=False)  # 防止最后一页溢出产生空白页
     pdf.add_page()
-    pdf.set_fill_color(*C['darkBg'])
-    pdf.rect(0, 0, PW, PH, 'F')
 
     pdf.set_y(25)
     pdf.set_font('CN', 'B', 28)
-    pdf.set_text_color(*C['white'])
+    pdf.set_text_color(*C['primary'])
     pdf.cell(0, 15, '总结 & 建议', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(10)
 
     if data.get('health'):
         h = data['health']
         pdf.set_font('CN', '', 13)
-        pdf.set_text_color(*C['white'])
+        pdf.set_text_color(*C['text'])
         pdf.cell(0, 10, f"财务健康评分: {h['score']} 分 · {h['grade']} · {h['grade_text']}", align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         for sug in h.get('suggestions', []):
             pdf.set_font('CN', '', 12)
-            pdf.set_text_color(*C['pink4'])
+            pdf.set_text_color(*C['pink2'])
             pdf.cell(0, 10, sug, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     pdf.ln(6)
@@ -432,7 +438,7 @@ def build_pdf(data, charts):
 
     for c in conclusions:
         pdf.set_font('CN', '', 11)
-        pdf.set_text_color(*C['pink4'])
+        pdf.set_text_color(*C['text'])
         pdf.cell(0, 9, c, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     pdf.set_y(PH - 25)

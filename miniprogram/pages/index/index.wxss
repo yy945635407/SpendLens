@@ -103,7 +103,7 @@
 
 /* 预算执行 */
 .budget-comp-item { display: flex; align-items: center; gap: 6rpx; margin-bottom: 12rpx; font-size: 24rpx; }
-.comp-label { min-width: 140rpx; text-align: left; display: flex; align-items: center; gap: 4rpx; overflow: hidden; flex-shrink: 0; }
+.comp-label { width: 140rpx; text-align: left; display: flex; align-items: center; gap: 4rpx; overflow: hidden; flex-shrink: 0; }
 .comp-amt { width: 120rpx; text-align: right; font-size: 22rpx; font-family: monospace; flex-shrink: 0; }
 .comp-pct { font-size: 22rpx; color: var(--muted); width: 72rpx; text-align: right; flex-shrink: 0; }
 

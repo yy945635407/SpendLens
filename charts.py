@@ -80,7 +80,7 @@ def _set_cn(labels, fp_obj):
 
 def pie_spending(cat1_list):
     """支出结构环形图。cat1_list: [(name, amount), ...]"""
-    fig, ax = plt.subplots(figsize=(7, 5.5))
+    fig, ax = plt.subplots(figsize=(8, 5))
     fig.patch.set_facecolor('none')
 
     labels = [c[0] for c in cat1_list]
@@ -101,8 +101,8 @@ def pie_spending(cat1_list):
             at.set_fontproperties(_fp(9))
 
     legend_labels = [f'{l}  {s:.1f}%' for l, s in zip(labels, sizes)]
-    ax.legend(wedges, legend_labels, loc='upper center',
-              bbox_to_anchor=(0.5, -0.08), prop=_fp(9), frameon=False, ncol=2)
+    ax.legend(wedges, legend_labels, loc='center left',
+              bbox_to_anchor=(1.02, 0.5), prop=_fp(9), frameon=False)
 
     ax.set_title('支出结构分布', fontsize=18, color=DARK, pad=20,
                  fontproperties=_fp(18))
@@ -223,7 +223,7 @@ def bar_account(account_list):
 def doughnut_income(income_list):
     """收入来源环形图。income_list: [(name, amount), ...]"""
     total = sum(i[1] for i in income_list)
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig, ax = plt.subplots(figsize=(7, 5.5))
     fig.patch.set_facecolor('none')
 
     ilabs = [i[0] for i in income_list]
@@ -244,7 +244,7 @@ def doughnut_income(income_list):
 
     leg_labels = [f'{l}  {s:.1f}%' for l, s in zip(ilabs, isizes)]
     ax.legend(wedges, leg_labels, loc='upper center',
-              bbox_to_anchor=(0.5, -0.08), prop=_fp(9), frameon=False, ncol=2)
+              bbox_to_anchor=(0.5, -0.08), prop=_fp(9), frameon=False, ncol=3)
     ax.set_title('收入来源分布', fontsize=18, color=DARK, pad=20, fontproperties=_fp(18))
     plt.tight_layout()
 

@@ -53,7 +53,16 @@ function uploadFile(filePath, onProgress) {
           reject(new Error('解析响应失败'));
         }
       },
-      fail: (err) => reject(new Error(err.errMsg || '上传失败'))
+      fail: (err) => {
+        const msg = err.errMsg || '';
+        if (msg.includes('abort') || msg.includes('cancel')) {
+          const e = new Error('已取消');
+          e.aborted = true;
+          reject(e);
+        } else {
+          reject(new Error(msg || '上传失败'));
+        }
+      }
     });
 
     // 真实上传进度
@@ -77,10 +86,19 @@ function downloadFileWithProgress(url, onProgress) {
         if (res.statusCode === 200) {
           resolve(res);
         } else {
-          reject(new Error('下载失败'));
+          reject(new Error(`服务器返回 ${res.statusCode}`));
         }
       },
-      fail: reject
+      fail: (err) => {
+        const msg = err.errMsg || '';
+        if (msg.includes('abort') || msg.includes('cancel')) {
+          const e = new Error('已取消');
+          e.aborted = true;
+          reject(e);
+        } else {
+          reject(new Error(msg || '下载失败'));
+        }
+      }
     });
 
     // 真实下载进度
