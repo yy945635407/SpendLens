@@ -36,10 +36,11 @@ function request(path, options = {}) {
   });
 }
 
-// 上传文件
-function uploadFile(filePath) {
-  return new Promise((resolve, reject) => {
-    wx.uploadFile({
+// 上传文件（带真实进度回调，返回 promise + task 引用）
+function uploadFile(filePath, onProgress) {
+  let task;
+  const promise = new Promise((resolve, reject) => {
+    task = wx.uploadFile({
       url: app.globalData.apiBase + '/analyze',
       filePath,
       name: 'file',
@@ -54,10 +55,46 @@ function uploadFile(filePath) {
       },
       fail: (err) => reject(new Error(err.errMsg || '上传失败'))
     });
+
+    // 真实上传进度
+    if (onProgress) {
+      task.onProgressUpdate((res) => {
+        onProgress(res.progress); // 0-100
+      });
+    }
   });
+  promise.task = task;
+  return promise;
 }
 
-// 下载文件
+// 下载文件（带真实进度回调，返回 promise + task 引用）
+function downloadFileWithProgress(url, onProgress) {
+  let task;
+  const promise = new Promise((resolve, reject) => {
+    task = wx.downloadFile({
+      url,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          resolve(res);
+        } else {
+          reject(new Error('下载失败'));
+        }
+      },
+      fail: reject
+    });
+
+    // 真实下载进度
+    if (onProgress) {
+      task.onProgressUpdate((res) => {
+        onProgress(res.progress); // 0-100
+      });
+    }
+  });
+  promise.task = task;
+  return promise;
+}
+
+// 下载文件并打开
 function downloadFile(url, filename) {
   return new Promise((resolve, reject) => {
     wx.downloadFile({
@@ -79,4 +116,4 @@ function downloadFile(url, filename) {
   });
 }
 
-module.exports = { request, uploadFile, downloadFile };
+module.exports = { request, uploadFile, downloadFile, downloadFileWithProgress };

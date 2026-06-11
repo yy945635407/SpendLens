@@ -1,5 +1,5 @@
 const app = getApp();
-const { request, uploadFile, downloadFile } = require('../../utils/api');
+const { request, uploadFile, downloadFile, downloadFileWithProgress } = require('../../utils/api');
 const { fmtMoney, fmtInt, fmtPct } = require('../../utils/format');
 
 Page({
@@ -55,7 +55,17 @@ Page({
     simResult: null,
     simType: 'reduce_category',
     simCat: '',
-    simPct: 20
+    simPct: 20,
+
+    // 详情弹窗
+    showDetailModal: false,
+    detailTitle: '',
+    detailSubtitle: '',
+    detailFormula: '',
+    detailItems: [],
+    detailColor: '#FF6B8A',
+    detailTotal: '',
+    detailTotalPct: ''
   },
 
   onLoad() {
@@ -100,19 +110,30 @@ Page({
       showProgress: true,
       progressTitle: '正在分析账单…',
       progressSub: '上传文件中…',
-      progressPct: 5
+      progressPct: 0
     });
 
     try {
-      const result = await uploadFile(filePath);
+      // 真实上传进度（0-50%），保存 task 引用用于取消
+      const uploadPromise = uploadFile(filePath, (progress) => {
+        const pct = Math.min(50, Math.floor(progress * 0.5));
+        this.setData({
+          progressSub: `上传文件中… ${progress}%`,
+          progressPct: pct
+        });
+      });
+      this._uploadTask = uploadPromise.task;
+      const result = await uploadPromise;
+      this._uploadTask = null;
 
-      this.setData({ progressSub: '计算统计数据…', progressPct: 30 });
+      // 服务器处理完成，数据处理阶段（50-85%）
+      this.setData({ progressSub: '分析数据中…', progressPct: 60 });
 
       const d = result.data;
       app.globalData.analysisData = d;
       app.globalData.cacheId = result.cache_id;
 
-      this.setData({ progressSub: '生成健康评分…', progressPct: 60 });
+      this.setData({ progressSub: '计算统计数据…', progressPct: 70 });
 
       this.setData({
         loading: false,
@@ -128,13 +149,13 @@ Page({
         tabActive: 'overview'
       });
 
-      // 加载图表
-      this.setData({ progressSub: '生成图表中…', progressPct: 75 });
+      // 加载图表（85-95%）
+      this.setData({ progressSub: '生成图表中…', progressPct: 85 });
       this.loadCharts(result.cache_id);
 
-      // 自动创建分享快照
-      this.setData({ progressSub: '创建分享链接…', progressPct: 90 });
-      this.createShareSnapshot(d);
+      // 创建分享快照（95-100%）
+      this.setData({ progressSub: '创建分享链接…', progressPct: 95 });
+      await this.createShareSnapshot(d);
 
       this.setData({ showProgress: false, progressPct: 100 });
       wx.showToast({ title: '分析完成', icon: 'success' });
@@ -354,42 +375,38 @@ Page({
     this.setData({
       showProgress: true,
       progressTitle: '正在生成 PPT…',
-      progressSub: '分析数据 · 绘制图表 · 排版中',
-      progressPct: 0
+      progressSub: '服务器生成中…',
+      progressPct: 5
     });
-    // 模拟进度更新
-    const pcts = [25, 50, 75, 95];
-    const steps = ['分析数据中…', '绘制图表中…', '排版幻灯片…', '打包完成'];
-    let step = 0;
-    const timer = setInterval(() => {
-      if (step < steps.length) {
-        this.setData({ progressSub: steps[step], progressPct: pcts[step] });
-        step++;
-      }
-    }, 800);
 
     const url = app.globalData.apiBase + '/generate-ppt/' + this.data.cacheId;
-    wx.downloadFile({
-      url,
-      success: (res) => {
-        clearInterval(timer);
-        this.setData({ showProgress: false, progressPct: 100 });
-        if (res.statusCode === 200) {
-          wx.openDocument({
-            filePath: res.tempFilePath,
-            showMenu: true,
-            success: () => wx.showToast({ title: 'PPT 已打开', icon: 'success' }),
-            fail: () => wx.showToast({ title: '请安装 WPS 或 Office 打开', icon: 'none' })
-          });
-        } else {
-          wx.showToast({ title: 'PPT 生成失败', icon: 'none' });
-        }
-      },
-      fail: () => {
-        clearInterval(timer);
-        this.setData({ showProgress: false });
-        wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
+
+    const dlPromise = downloadFileWithProgress(url, (progress) => {
+      // 真实下载进度：服务器生成完后开始传输，映射到 10-100%
+      const pct = 10 + Math.floor(progress * 0.9);
+      this.setData({
+        progressSub: `下载中… ${progress}%`,
+        progressPct: Math.min(100, pct)
+      });
+    });
+    this._downloadTask = dlPromise.task;
+    dlPromise.then((res) => {
+      this._downloadTask = null;
+      this.setData({ showProgress: false, progressPct: 100 });
+      if (res.statusCode === 200) {
+        wx.openDocument({
+          filePath: res.tempFilePath,
+          showMenu: true,
+          success: () => wx.showToast({ title: 'PPT 已打开', icon: 'success' }),
+          fail: () => wx.showToast({ title: '请安装 WPS 或 Office 打开', icon: 'none' })
+        });
+      } else {
+        wx.showToast({ title: 'PPT 生成失败', icon: 'none' });
       }
+    }).catch(() => {
+      this._downloadTask = null;
+      this.setData({ showProgress: false });
+      wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
     });
   },
 
@@ -401,41 +418,38 @@ Page({
     this.setData({
       showProgress: true,
       progressTitle: '正在生成 PDF…',
-      progressSub: '分析数据 · 渲染图表 · 排版中',
-      progressPct: 0
+      progressSub: '服务器生成中…',
+      progressPct: 5
     });
-    const pcts = [25, 50, 75, 95];
-    const steps = ['分析数据中…', '渲染图表中…', '排版页面中…', '打包完成'];
-    let step = 0;
-    const timer = setInterval(() => {
-      if (step < steps.length) {
-        this.setData({ progressSub: steps[step], progressPct: pcts[step] });
-        step++;
-      }
-    }, 800);
 
     const url = app.globalData.apiBase + '/generate-pdf/' + this.data.cacheId;
-    wx.downloadFile({
-      url,
-      success: (res) => {
-        clearInterval(timer);
-        this.setData({ showProgress: false, progressPct: 100 });
-        if (res.statusCode === 200) {
-          wx.openDocument({
-            filePath: res.tempFilePath,
-            showMenu: true,
-            success: () => wx.showToast({ title: 'PDF 已打开', icon: 'success' }),
-            fail: () => wx.showToast({ title: '请安装 PDF 阅读器打开', icon: 'none' })
-          });
-        } else {
-          wx.showToast({ title: 'PDF 生成失败', icon: 'none' });
-        }
-      },
-      fail: () => {
-        clearInterval(timer);
-        this.setData({ showProgress: false });
-        wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
+
+    const dlPromise = downloadFileWithProgress(url, (progress) => {
+      // 真实下载进度：服务器生成完后开始传输，映射到 10-100%
+      const pct = 10 + Math.floor(progress * 0.9);
+      this.setData({
+        progressSub: `下载中… ${progress}%`,
+        progressPct: Math.min(100, pct)
+      });
+    });
+    this._downloadTask = dlPromise.task;
+    dlPromise.then((res) => {
+      this._downloadTask = null;
+      this.setData({ showProgress: false, progressPct: 100 });
+      if (res.statusCode === 200) {
+        wx.openDocument({
+          filePath: res.tempFilePath,
+          showMenu: true,
+          success: () => wx.showToast({ title: 'PDF 已打开', icon: 'success' }),
+          fail: () => wx.showToast({ title: '请安装 PDF 阅读器打开', icon: 'none' })
+        });
+      } else {
+        wx.showToast({ title: 'PDF 生成失败', icon: 'none' });
       }
+    }).catch(() => {
+      this._downloadTask = null;
+      this.setData({ showProgress: false });
+      wx.showToast({ title: '下载失败，请检查网络', icon: 'none' });
     });
   },
 
@@ -471,17 +485,120 @@ Page({
     });
   },
 
+  // ============ 详情弹窗 ============
+  showDetail(e) {
+    const idx = e.currentTarget.dataset.idx;
+    const d = this.data.analysisData;
+    if (!d) return;
+
+    let title = '', subtitle = '', formula = '', items = [], color = '', total = '', totalPct = '';
+
+    switch (idx) {
+      case 0: // 总收入
+        title = '💰 总收入详情';
+        subtitle = `合计 ${fmtMoney(d.total_income)} · ${d.income_count} 笔收入`;
+        formula = '📐 总收入 = 所有收入来源金额之和';
+        color = '#7BC8A4';
+        items = (d.income_list || []).map(([name, amt]) => ({
+          name,
+          amount: `${fmtMoney(amt)}`,
+          pct: `${(amt / d.total_income * 100).toFixed(1)}%`
+        }));
+        total = `${fmtMoney(d.total_income)}`;
+        totalPct = '100%';
+        break;
+
+      case 1: // 总支出
+        title = '📊 总支出详情';
+        subtitle = `合计 ${fmtMoney(d.total_expense)} · ${d.expense_count} 笔支出`;
+        formula = '📐 总支出 = 所有支出一级分类金额之和';
+        color = '#FF6B8A';
+        items = (d.cat1_list || []).map(([name, amt]) => ({
+          name,
+          amount: `${fmtMoney(amt)}`,
+          pct: `${(amt / d.total_expense * 100).toFixed(1)}%`
+        }));
+        total = `${fmtMoney(d.total_expense)}`;
+        totalPct = '100%';
+        break;
+
+      case 2: // 结余
+        title = '🎀 结余详情';
+        subtitle = `结余 ${fmtMoney(d.balance)} · 储蓄率 ${d.savings_rate}%`;
+        formula = `📐 计算方式：\n结余 = 总收入 − 总支出\n= ${fmtMoney(d.total_income)} − ${fmtMoney(d.total_expense)}\n= ${fmtMoney(d.balance)}\n\n📐 储蓄率 = 结余 ÷ 总收入 × 100%\n= ${fmtMoney(d.balance)} ÷ ${fmtMoney(d.total_income)} × 100%\n= ${d.savings_rate}%`;
+        color = '#FF85A2';
+        break;
+
+      case 3: // 日均
+        title = '🍰 日均支出详情';
+        subtitle = `日均 ${fmtMoney(d.daily_avg)} · ${d.month || ''}`;
+        const daysInMonth = (d.daily_list && d.daily_list.length) || 30;
+        formula = `📐 计算方式：\n日均支出 = 总支出 ÷ ${daysInMonth}天\n= ${fmtMoney(d.total_expense)} ÷ ${daysInMonth}\n= ${fmtMoney(d.daily_avg)}`;
+        color = '#FFB3C6';
+        items = (d.daily_list || []).map(([day, amt]) => ({
+          name: day,
+          amount: `${fmtMoney(amt)}`
+        }));
+        break;
+
+      case 4: // 最大类
+        const topCat = d.cat1_list && d.cat1_list[0] ? d.cat1_list[0] : ['无', 0];
+        title = '💕 最大支出类别';
+        subtitle = `${topCat[0]} · ${fmtMoney(topCat[1])} · 占${(topCat[1]/d.total_expense*100).toFixed(1)}%`;
+        formula = '📐 按支出一级分类排序，金额最高者为最大类别';
+        color = '#FF7EB3';
+        items = (d.cat1_list || []).slice(0, 5).map(([name, amt], idx2) => ({
+          name: `${idx2 === 0 ? '👑 ' : ''}${name}`,
+          amount: `${fmtMoney(amt)}`,
+          pct: `${(amt / d.total_expense * 100).toFixed(1)}%`
+        }));
+        break;
+
+      case 5: // 交易
+        title = '📋 交易总览';
+        subtitle = `共 ${d.transaction_count} 笔 · ${d.income_count}收 · ${d.expense_count}支`;
+        formula = `📐 计算方式：\n交易总数 = 收入笔数 + 支出笔数\n= ${d.income_count} + ${d.expense_count}\n= ${d.transaction_count} 笔\n\n📊 收支比 = ${d.income_count} : ${d.expense_count}`;
+        color = '#C4909E';
+        break;
+    }
+
+    this.setData({
+      showDetailModal: true,
+      detailTitle: title,
+      detailSubtitle: subtitle,
+      detailFormula: formula,
+      detailItems: items,
+      detailColor: color,
+      detailTotal: total,
+      detailTotalPct: totalPct
+    });
+  },
+
+  closeDetail() {
+    this.setData({ showDetailModal: false });
+  },
+
   cancelProgress() {
     wx.showModal({
       title: '取消操作',
       content: '确定要取消当前操作吗？',
       success: (res) => {
         if (res.confirm) {
+          // 终止正在进行的上传/下载任务
+          if (this._uploadTask) {
+            this._uploadTask.abort();
+            this._uploadTask = null;
+          }
+          if (this._downloadTask) {
+            this._downloadTask.abort();
+            this._downloadTask = null;
+          }
           this.setData({
             loading: false,
             showProgress: false,
             progressPct: 0
           });
+          wx.showToast({ title: '已取消', icon: 'none' });
         }
       }
     });

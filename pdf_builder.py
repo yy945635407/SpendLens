@@ -149,22 +149,25 @@ def build_pdf(data, charts):
     pdf.ln(8)
 
     # 6 卡片网格 (2行 × 3列) — 横向加宽
+    income_count = data.get('income_count', 0)
+    expense_count = data.get('expense_count', 0)
+    transaction_count = data.get('transaction_count', income_count + expense_count)
     stats = [
-        ('总收入', f'¥{data["total_income"]:,.0f}', f'{data["income_count"]}笔', C['positive']),
-        ('总支出', f'¥{data["total_expense"]:,.0f}', f'{data["expense_count"]}笔', C['primary']),
-        ('结余', f'¥{data["balance"]:,.0f}', f'储蓄率{data["savings_rate"]}%', C['pink2']),
-        ('日均支出', f'¥{data["daily_avg"]:,.0f}', f'日均{data["expense_count"]/31:.1f}笔', C['pink3']),
-        ('最大类别', data['cat1_list'][0][0], f'¥{data["cat1_list"][0][1]:,.0f}', C['rose']),
-        ('最节省周', data['weekly_list'][-1][0], f'¥{data["weekly_list"][-1][1]:,.0f}', C['gold']),
+        ('总收入', 'Total Income', f'¥{data["total_income"]:,.0f}', f'{income_count}笔', C['positive']),
+        ('总支出', 'Total Expense', f'¥{data["total_expense"]:,.0f}', f'{expense_count}笔', C['primary']),
+        ('结余', 'Balance', f'¥{data["balance"]:,.0f}', f'储蓄率{data["savings_rate"]}%', C['pink2']),
+        ('日均支出', 'Daily Avg', f'¥{data["daily_avg"]:,.0f}', f'{data["month"]}', C['pink3']),
+        ('最大支出', 'Top Category', data['cat1_list'][0][0] if data['cat1_list'] else '-', f'¥{data["cat1_list"][0][1]:,.0f}' if data['cat1_list'] else '', C['rose']),
+        ('交易笔数', 'Transactions', f'{transaction_count}笔', f'{income_count}收·{expense_count}支', C['gold']),
     ]
 
     col_w = 82
-    row_h = 32
+    row_h = 36
     gap_x = 8
     start_x = 18
-    for i, (label, value, sub, accent) in enumerate(stats):
+    for i, (label, en, value, sub, accent) in enumerate(stats):
         x = start_x + (i % 3) * (col_w + gap_x)
-        y = 55 + (i // 3) * (row_h + 6)
+        y = 55 + (i // 3) * (row_h + 8)
 
         pdf.set_xy(x, y)
         pdf.set_fill_color(*C['white'])
@@ -180,24 +183,29 @@ def build_pdf(data, charts):
         pdf.rect(x + 3, y, col_w - 3, row_h, 'D')
 
         pdf.set_xy(x + 6, y + 4)
-        pdf.set_font('CN', 'B', 16)
+        pdf.set_font('CN', 'B', 15)
         pdf.set_text_color(*C['text'])
-        pdf.cell(col_w - 12, 8, value, align='L')
+        pdf.cell(col_w - 12, 7, value, align='L')
 
-        pdf.set_xy(x + 6, y + 16)
+        pdf.set_xy(x + 6, y + 14)
         pdf.set_font('CN', '', 9)
-        pdf.set_text_color(*C['muted'])
-        pdf.cell(col_w - 12, 6, label, align='L')
+        pdf.set_text_color(*C['text'])
+        pdf.cell(col_w - 12, 5, label, align='L')
 
-        pdf.set_xy(x + 6, y + 22)
+        pdf.set_xy(x + 6, y + 19)
+        pdf.set_font('CN', '', 7)
+        pdf.set_text_color(*C['muted'])
+        pdf.cell(col_w - 12, 5, en, align='L')
+
+        pdf.set_xy(x + 6, y + 25)
         pdf.set_font('CN', '', 8)
         pdf.set_text_color(*accent)
-        pdf.cell(col_w - 12, 6, sub, align='L')
+        pdf.cell(col_w - 12, 5, sub, align='L')
 
     # 健康评分
     if data.get('health'):
         h = data['health']
-        pdf.set_xy(start_x, 140)
+        pdf.set_xy(start_x, 150)
         pdf.set_font('CN', 'B', 14)
         pdf.set_text_color(*C['text'])
         pdf.cell(0, 10, '🌸 财务健康评分', align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -208,7 +216,22 @@ def build_pdf(data, charts):
         pdf.set_font('CN', '', 11)
         pdf.set_text_color(*C['muted'])
         pdf.ln(12)
-        pdf.cell(0, 6, h['grade_text'], align='L')
+        pdf.cell(0, 6, h['grade_text'], align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        # Health details
+        if h.get('details'):
+            health_lines = []
+            for detail in h['details'][:3]:
+                health_lines.append(f"• {detail['dim']}: {detail['comment']}")
+            pdf.set_font('CN', '', 9)
+            pdf.set_text_color(*C['text'])
+            for line in health_lines:
+                pdf.cell(0, 6, line, align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        # Suggestions
+        if h.get('suggestions'):
+            pdf.ln(2)
+            pdf.set_font('CN', '', 9)
+            pdf.set_text_color(*C['primary'])
+            pdf.cell(0, 6, '💡 ' + ' · '.join(h['suggestions'][:2]), align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     # ================ 支出结构 ================
     pdf.add_page()
@@ -236,6 +259,19 @@ def build_pdf(data, charts):
         pdf.set_font('CN', '', 10)
         pdf.cell(65, 7, f'¥{amt:,.0f}   ({pct:.1f}%)', align='R')
 
+    # Spending structure analysis
+    top1 = data['cat1_list'][0] if data.get('cat1_list') else ('无', 0)
+    top1_pct = top1[1] / data['total_expense'] * 100 if data.get('total_expense', 1) > 0 else 0
+    pdf.set_xy(155, 145)
+    pdf.set_font('CN', 'B', 10)
+    pdf.set_text_color(*C['text'])
+    if top1_pct > 40:
+        pdf.multi_cell(120, 6, f'📊 最大类别「{top1[0]}」占{top1_pct:.0f}%，支出较为集中，可关注优化空间', align='L')
+    elif top1_pct > 25:
+        pdf.multi_cell(120, 6, f'📊 最大类别「{top1[0]}」占{top1_pct:.0f}%，支出结构基本合理', align='L')
+    else:
+        pdf.multi_cell(120, 6, f'📊 最大类别仅占{top1_pct:.0f}%，支出分散健康', align='L')
+
     # ================ 餐饮细分 ================
     pdf.add_page()
     pdf.set_font('CN', 'B', 22)
@@ -251,6 +287,19 @@ def build_pdf(data, charts):
         chart_buf.seek(0)
         pdf.image(chart_buf, x=10, y=pdf.get_y(), w=140)
 
+    # Food analysis
+    food_cats = {c[0]: c[1] for c in data.get('food_list', [])}
+    total_food = sum(f[1] for f in data.get('food_list', [])) or 1
+    cook_amt = food_cats.get('三餐', 0) + food_cats.get('做饭材料', 0)
+    cook_ratio = cook_amt / total_food * 100
+    pdf.set_xy(155, 45)
+    pdf.set_font('CN', 'B', 10)
+    pdf.set_text_color(*C['text'])
+    if cook_ratio > 60:
+        pdf.multi_cell(120, 6, f'✅ 以做饭为主（{cook_ratio:.0f}%），饮食结构健康\n🍳 做饭占比{cook_ratio:.0f}%，日均餐饮¥{data["daily_food"]:.2f}', align='L')
+    else:
+        pdf.multi_cell(120, 6, f'⚠️ 外卖占比较高，多做饭更省钱\n📊 日均餐饮¥{data["daily_food"]:.2f}', align='L')
+
     # ================ 每周趋势 ================
     pdf.add_page()
     pdf.set_font('CN', 'B', 22)
@@ -262,6 +311,20 @@ def build_pdf(data, charts):
         chart_buf = charts['line_weekly']
         chart_buf.seek(0)
         pdf.image(chart_buf, x=10, y=pdf.get_y(), w=170)
+
+    # Weekly analysis
+    wl = data.get('weekly_list', [])
+    if len(wl) >= 2:
+        peak_week = max(wl, key=lambda x: x[1])
+        low_week = min(wl, key=lambda x: x[1])
+        weekly_avg = sum(w[1] for w in wl) / len(wl)
+        pdf.set_xy(18, 160)
+        pdf.set_font('CN', 'B', 10)
+        pdf.set_text_color(*C['text'])
+        pdf.multi_cell(250, 6,
+            f'📈 周均支出 ¥{weekly_avg:,.0f} · 峰值 {peak_week[0]} ¥{peak_week[1]:,.0f} · 低谷 {low_week[0]} ¥{low_week[1]:,.0f}\n'
+            f'{"⚠️ 峰值周存在大额支出，建议关注是否可优化" if peak_week[1] > weekly_avg * 1.5 else "✅ 周间支出波动在正常范围"}',
+            align='L')
 
     # ================ 每日热力图 ================
     if charts.get('heatmap'):
@@ -295,7 +358,25 @@ def build_pdf(data, charts):
         chart_buf.seek(0)
         pdf.image(chart_buf, x=10, y=pdf.get_y(), w=180)
 
+        # Budget analysis
+        over_count = sum(1 for c in bc.get('categories', []) if c['status'] == 'over')
+        no_budget_count = sum(1 for c in bc.get('categories', []) if c['status'] == 'no_budget')
+        pdf.set_xy(18, 175)
+        pdf.set_font('CN', 'B', 10)
+        pdf.set_text_color(*C['text'])
+        analysis_parts = []
+        if over_count > 0:
+            analysis_parts.append(f'🔴 {over_count} 个类别超预算')
+        if no_budget_count > 0:
+            analysis_parts.append(f'⚪ {no_budget_count} 个类别未列入预算')
+        if analysis_parts:
+            pdf.cell(0, 6, ' · '.join(analysis_parts), align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font('CN', '', 9)
+            pdf.set_text_color(*C['muted'])
+            pdf.cell(0, 5, '建议为所有主要支出类别设定预算，以便全面掌控财务状况', align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
     # ================ 总结 ================
+    pdf.set_auto_page_break(auto=False)  # 防止最后一页溢出产生空白页
     pdf.add_page()
     pdf.set_fill_color(*C['darkBg'])
     pdf.rect(0, 0, PW, PH, 'F')
@@ -308,23 +389,51 @@ def build_pdf(data, charts):
 
     if data.get('health'):
         h = data['health']
+        pdf.set_font('CN', '', 13)
+        pdf.set_text_color(*C['white'])
+        pdf.cell(0, 10, f"财务健康评分: {h['score']} 分 · {h['grade']} · {h['grade_text']}", align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         for sug in h.get('suggestions', []):
-            pdf.set_font('CN', '', 14)
+            pdf.set_font('CN', '', 12)
             pdf.set_text_color(*C['pink4'])
-            pdf.cell(0, 12, sug, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.cell(0, 10, sug, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-    pdf.ln(8)
+    pdf.ln(6)
 
-    conclusions = [
-        f"储蓄率 {data['savings_rate']}%，财务状态健康",
-        f"月度结余 ¥{data['balance']:,.0f}",
-        f"日均支出 ¥{data['daily_avg']:,.0f}",
-        f"共 {data['transaction_count']} 笔交易",
-    ]
+    # Data-driven conclusions
+    sr = data.get('savings_rate', 0)
+    conclusions = []
+    if sr >= 60:
+        conclusions.append(f'💰 储蓄率 {sr}%，远高于推荐水平，财富积累能力优秀')
+    elif sr >= 40:
+        conclusions.append(f'💰 储蓄率 {sr}%，财务状态健康，继续保持')
+    else:
+        conclusions.append(f'💰 储蓄率 {sr}%，建议设定月度存款目标逐步提高')
+
+    conclusions.append(f'📊 月度结余 ¥{data["balance"]:,.0f} · 日均支出 ¥{data["daily_avg"]:,.0f}')
+
+    # Food structure
+    food_cats = {c[0]: c[1] for c in data.get('food_list', [])}
+    total_food = sum(f[1] for f in data.get('food_list', [])) or 1
+    cook_ratio = (food_cats.get('三餐', 0) + food_cats.get('做饭材料', 0)) / total_food * 100
+    if cook_ratio > 60:
+        conclusions.append(f'🍳 以做饭为主（{cook_ratio:.0f}%），饮食结构健康，日均餐饮 ¥{data["daily_food"]:.2f}')
+    else:
+        conclusions.append(f'🍳 外卖占比 {100-cook_ratio:.0f}%，多做饭可有效降低餐饮支出')
+
+    # Spending
+    top1 = data['cat1_list'][0] if data.get('cat1_list') else ('无', 0)
+    top1_pct = top1[1] / data['total_expense'] * 100
+    if top1_pct > 40:
+        conclusions.append(f'📊 最大支出「{top1[0]}」占 {top1_pct:.0f}%，可关注是否有优化空间')
+    else:
+        conclusions.append(f'📊 最大支出仅占 {top1_pct:.0f}%，支出结构分散健康')
+
+    conclusions.append(f'✨ 共 {data.get("transaction_count", 0)} 笔交易 · {data.get("income_count", 0)}收 {data.get("expense_count", 0)}支')
+
     for c in conclusions:
-        pdf.set_font('CN', '', 12)
+        pdf.set_font('CN', '', 11)
         pdf.set_text_color(*C['pink4'])
-        pdf.cell(0, 10, c, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 9, c, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     pdf.set_y(PH - 25)
     pdf.set_font('CN', '', 9)

@@ -370,6 +370,59 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.error { background: rgba(180,40,40,0.95); }
 
+  /* ——— Detail Modal ——— */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-card {
+    background: #FFF; border-radius: 24px; padding: 36px 32px 28px;
+    max-width: 480px; width: 90%; max-height: 75vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 20px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,0.05);
+    font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: all var(--ease-out);
+  }
+  .modal-close:hover { background: rgba(0,0,0,0.1); color: var(--text); }
+  .modal-title {
+    font-size: 20px; font-weight: 500; margin-bottom: 4px; letter-spacing: 0.04em;
+  }
+  .modal-subtitle {
+    font-size: 12px; color: var(--muted); margin-bottom: 24px; font-weight: 300;
+  }
+  .detail-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 10px; margin-bottom: 4px;
+    transition: background var(--ease-out);
+  }
+  .detail-row:hover { background: rgba(255,240,245,0.3); }
+  .detail-row .detail-name { font-size: 13px; font-weight: 400; color: var(--text); }
+  .detail-row .detail-amount {
+    font-size: 13px; font-weight: 500; font-family: 'JetBrains Mono', monospace;
+  }
+  .detail-row .detail-pct {
+    font-size: 11px; font-weight: 300; width: 44px; text-align: right;
+    font-family: 'JetBrains Mono', monospace; opacity: 0.7;
+  }
+  .detail-formula {
+    padding: 16px 20px; background: rgba(255,240,245,0.3);
+    border-radius: 14px; margin-bottom: 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.8;
+    color: var(--text);
+  }
+  .detail-total {
+    padding-top: 10px; margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.06);
+    font-weight: 500;
+  }
+
   /* ——— Footer ——— */
   .footer {
     text-align:center; padding: 24px;
@@ -438,6 +491,10 @@
     <div class="spinner-ring"><div></div><div></div></div>
     <div class="loading-text">正在生成报告…</div>
     <div class="loading-sub">10 — 15 seconds</div>
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.04);font-size:11px;color:var(--muted);line-height:1.7;font-weight:300;">
+      💡 如等待时间过长，可能是网络问题，请耐心等待<br>
+      💡 如生成文件有格式遮挡，请重新生成试试
+    </div>
   </div>
 
   <!-- Tabs -->
@@ -560,6 +617,16 @@
 <div class="footer">SpendLens · Bill + Lens · Powered by AI</div>
 <div class="toast" id="toast"></div>
 
+<!-- Detail Modal -->
+<div class="modal-overlay hidden" id="detailModal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeDetail()">✕</button>
+    <div class="modal-title" id="detailTitle"></div>
+    <div class="modal-subtitle" id="detailSubtitle"></div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
 <script>
   let analysisData = null;
   let uploadedFile = null;
@@ -643,18 +710,18 @@
     }
 
     const stats = [
-      { label:'总收入', value:`¥${d.total_income.toLocaleString()}`, sub:`${d.income_count} 笔`, color:'#7BC8A4' },
-      { label:'总支出', value:`¥${d.total_expense.toLocaleString()}`, sub:`${d.expense_count} 笔`, color:'#FF6B8A' },
-      { label:'结余', value:`¥${d.balance.toLocaleString()}`, sub:`储蓄率 ${d.savings_rate}%`, color:'#FF85A2' },
-      { label:'日均', value:`¥${d.daily_avg.toLocaleString()}`, sub: d.month || '', color:'#FFB3C6' },
-      { label:'最大类', value: (d.cat1_list[0]||['-'])[0], sub:`¥${(d.cat1_list[0]||[0,0])[1]?.toLocaleString()||0}`, color:'#FF7EB3' },
-      { label:'交易', value:`${d.transaction_count} 笔`, sub:`${d.income_count}收 · ${d.expense_count}支`, color:'#C4909E' },
+      { label:'总收入', value:`¥${d.total_income.toLocaleString()}`, sub:`${d.income_count} 笔`, color:'#7BC8A4', idx:0 },
+      { label:'总支出', value:`¥${d.total_expense.toLocaleString()}`, sub:`${d.expense_count} 笔`, color:'#FF6B8A', idx:1 },
+      { label:'结余', value:`¥${d.balance.toLocaleString()}`, sub:`储蓄率 ${d.savings_rate}%`, color:'#FF85A2', idx:2 },
+      { label:'日均', value:`¥${d.daily_avg.toLocaleString()}`, sub: d.month || '', color:'#FFB3C6', idx:3 },
+      { label:'最大类', value: (d.cat1_list[0]||['-'])[0], sub:`¥${(d.cat1_list[0]||[0,0])[1]?.toLocaleString()||0}`, color:'#FF7EB3', idx:4 },
+      { label:'交易', value:`${d.transaction_count} 笔`, sub:`${d.income_count}收 · ${d.expense_count}支`, color:'#C4909E', idx:5 },
     ];
     $('statsGrid').innerHTML = stats.map(s => `
-      <div class="section-block stat-card" style="border-left:3px solid ${s.color};">
+      <div class="section-block stat-card" style="border-left:3px solid ${s.color};cursor:pointer;" onclick="showDetail(${s.idx})">
         <div class="accent-dot" style="background:${s.color};opacity:0.3;"></div>
         <div class="value" style="color:${s.color}">${s.value}</div>
-        <div class="label">${s.label}</div>
+        <div class="label">${s.label} <span style="font-size:10px;opacity:0.4;">›</span></div>
         <div class="sub" style="color:${s.color};">${s.sub}</div>
       </div>`).join('');
 
@@ -725,11 +792,12 @@
       const icon = c.status === 'over' ? '●' : c.status === 'ok' ? '●' : '○';
       const clr = c.status === 'over' ? 'var(--pink)' : c.status === 'ok' ? 'var(--mint)' : 'var(--muted)';
       const maxW = Math.max(c.actual, c.budget || 0, 1);
-      html += `<div class="budget-comp-item">
-        <span style="width:68px;text-align:right;font-size:11px;color:${clr};">${icon} ${c.category}</span>
-        <div class="budget-comp-bar"><div class="budget-comp-fill" style="width:${c.actual/maxW*100}%;background:${clr};"></div></div>
-        <span style="width:74px;text-align:right;color:${clr};font-size:11px;font-family:'JetBrains Mono',monospace;">¥${c.actual.toLocaleString()}</span>
-        <span style="font-size:10px;color:var(--muted);width:34px;font-family:'JetBrains Mono',monospace;">${c.pct_used!==null?c.pct_used+'%':'-'}</span></div>`;
+      html += `<div class="budget-comp-item" style="align-items:center;">
+        <span style="width:22px;text-align:center;flex-shrink:0;font-size:9px;color:${clr};">${icon}</span>
+        <span style="width:72px;text-align:left;font-size:12px;color:${clr};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">${c.category}</span>
+        <div class="budget-comp-bar" style="flex:1;min-width:0;"><div class="budget-comp-fill" style="width:${c.actual/maxW*100}%;background:${clr};"></div></div>
+        <span style="width:80px;text-align:right;color:${clr};font-size:11px;font-family:'JetBrains Mono',monospace;flex-shrink:0;">¥${c.actual.toLocaleString()}</span>
+        <span style="width:62px;text-align:right;font-size:11px;color:${clr};font-weight:300;flex-shrink:0;">${c.pct_used!==null?c.pct_used+'%':'未列入预算'}</span></div>`;
     }
     html += '</div>';
     $('budgetComparison').innerHTML = html;
@@ -880,6 +948,135 @@
   }
 
   loadBudget();
+
+  // ---- Detail Modal ----
+  function showDetail(idx) {
+    if (!analysisData) return;
+    const d = analysisData;
+    const modal = $('detailModal');
+    let title = '', subtitle = '', content = '';
+
+    switch (idx) {
+      case 0: // 总收入
+        title = '💰 总收入详情';
+        subtitle = `合计 ¥${d.total_income.toLocaleString()} · ${d.income_count} 笔收入`;
+        content = '<div class="detail-formula">📐 总收入 = 所有收入来源金额之和</div>';
+        if (d.income_list && d.income_list.length) {
+          const maxInc = d.income_list[0][1] || 1;
+          d.income_list.forEach(([name, amt]) => {
+            const pct = (amt / d.total_income * 100).toFixed(1);
+            content += `<div class="detail-row">
+              <span class="detail-name">${name}</span>
+              <span class="detail-amount" style="color:#7BC8A4;">¥${amt.toLocaleString()}</span>
+              <span class="detail-pct" style="color:#7BC8A4;">${pct}%</span>
+            </div>`;
+          });
+          content += `<div class="detail-row detail-total">
+            <span class="detail-name" style="font-weight:500;">合计</span>
+            <span class="detail-amount" style="color:#7BC8A4;font-weight:600;">¥${d.total_income.toLocaleString()}</span>
+            <span class="detail-pct">100%</span>
+          </div>`;
+        }
+        break;
+
+      case 1: // 总支出
+        title = '📊 总支出详情';
+        subtitle = `合计 ¥${d.total_expense.toLocaleString()} · ${d.expense_count} 笔支出`;
+        content = '<div class="detail-formula">📐 总支出 = 所有支出一级分类金额之和</div>';
+        if (d.cat1_list && d.cat1_list.length) {
+          const maxCat = d.cat1_list[0][1] || 1;
+          d.cat1_list.forEach(([name, amt]) => {
+            const pct = (amt / d.total_expense * 100).toFixed(1);
+            content += `<div class="detail-row">
+              <span class="detail-name">${name}</span>
+              <span class="detail-amount" style="color:#FF6B8A;">¥${amt.toLocaleString()}</span>
+              <span class="detail-pct" style="color:#FF6B8A;">${pct}%</span>
+            </div>`;
+          });
+          content += `<div class="detail-row detail-total">
+            <span class="detail-name" style="font-weight:500;">合计</span>
+            <span class="detail-amount" style="color:#FF6B8A;font-weight:600;">¥${d.total_expense.toLocaleString()}</span>
+            <span class="detail-pct">100%</span>
+          </div>`;
+        }
+        break;
+
+      case 2: // 结余
+        title = '🎀 结余详情';
+        subtitle = `结余 ¥${d.balance.toLocaleString()} · 储蓄率 ${d.savings_rate}%`;
+        content = `<div class="detail-formula">
+          📐 计算方式：<br>
+          结余 = 总收入 − 总支出<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ¥${d.total_income.toLocaleString()} − ¥${d.total_expense.toLocaleString()}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <b>¥${d.balance.toLocaleString()}</b><br><br>
+          📐 储蓄率 = 结余 ÷ 总收入 × 100%<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ¥${d.balance.toLocaleString()} ÷ ¥${d.total_income.toLocaleString()} × 100%<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <b>${d.savings_rate}%</b>
+        </div>`;
+        break;
+
+      case 3: // 日均
+        title = '🍰 日均支出详情';
+        subtitle = `日均 ¥${d.daily_avg.toLocaleString()} · ${d.month || ''}`;
+        const daysInMonth = (d.daily_list && d.daily_list.length) || 30;
+        content = `<div class="detail-formula">
+          📐 计算方式：<br>
+          日均支出 = 总支出 ÷ ${daysInMonth}天<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ¥${d.total_expense.toLocaleString()} ÷ ${daysInMonth}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <b>¥${d.daily_avg.toLocaleString()}</b>
+        </div>`;
+        if (d.daily_list && d.daily_list.length) {
+          content += '<div style="font-size:12px;color:var(--muted);margin-top:12px;font-weight:300;">📅 每日支出明细：</div>';
+          d.daily_list.forEach(([day, amt]) => {
+            content += `<div class="detail-row">
+              <span class="detail-name">${day}</span>
+              <span class="detail-amount" style="color:#FFB3C6;">¥${amt.toLocaleString()}</span>
+            </div>`;
+          });
+        }
+        break;
+
+      case 4: // 最大类
+        title = '💕 最大支出类别';
+        const topCat = d.cat1_list && d.cat1_list[0] ? d.cat1_list[0] : ['无', 0];
+        subtitle = `${topCat[0]} · ¥${topCat[1].toLocaleString()} · 占${(topCat[1]/d.total_expense*100).toFixed(1)}%`;
+        content = '<div class="detail-formula">📐 按支出一级分类排序，金额最高者为最大类别</div>';
+        if (d.cat1_list && d.cat1_list.length) {
+          d.cat1_list.slice(0, 5).forEach(([name, amt], idx) => {
+            const pct = (amt / d.total_expense * 100).toFixed(1);
+            content += `<div class="detail-row">
+              <span class="detail-name">${idx === 0 ? '👑 ' : ''}${name}</span>
+              <span class="detail-amount" style="color:#FF7EB3;">¥${amt.toLocaleString()}</span>
+              <span class="detail-pct" style="color:#FF7EB3;">${pct}%</span>
+            </div>`;
+          });
+        }
+        break;
+
+      case 5: // 交易
+        title = '📋 交易总览';
+        subtitle = `共 ${d.transaction_count} 笔 · ${d.income_count}收 · ${d.expense_count}支`;
+        content = `<div class="detail-formula">
+          📐 计算方式：<br>
+          交易总数 = 收入笔数 + 支出笔数<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${d.income_count} + ${d.expense_count}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <b>${d.transaction_count} 笔</b><br><br>
+          📊 收支比 = 收入笔数 : 支出笔数<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${d.income_count} : ${d.expense_count}
+        </div>`;
+        break;
+    }
+
+    $('detailTitle').textContent = title;
+    $('detailSubtitle').textContent = subtitle;
+    $('detailContent').innerHTML = content;
+    modal.classList.remove('hidden');
+    modal.addEventListener('click', e => { if (e.target === modal) closeDetail(); });
+  }
+
+  function closeDetail() {
+    $('detailModal').classList.add('hidden');
+  }
 </script>
 </body>
 </html>

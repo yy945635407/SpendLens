@@ -101,8 +101,8 @@ def pie_spending(cat1_list):
             at.set_fontproperties(_fp(9))
 
     legend_labels = [f'{l}  {s:.1f}%' for l, s in zip(labels, sizes)]
-    ax.legend(wedges, legend_labels, loc='center left',
-              bbox_to_anchor=(1, 0.5), prop=_fp(9), frameon=False)
+    ax.legend(wedges, legend_labels, loc='upper center',
+              bbox_to_anchor=(0.5, -0.08), prop=_fp(9), frameon=False, ncol=2)
 
     ax.set_title('支出结构分布', fontsize=18, color=DARK, pad=20,
                  fontproperties=_fp(18))
@@ -243,8 +243,8 @@ def doughnut_income(income_list):
             at.set_fontproperties(_fp(10))
 
     leg_labels = [f'{l}  {s:.1f}%' for l, s in zip(ilabs, isizes)]
-    ax.legend(wedges, leg_labels, loc='center left',
-              bbox_to_anchor=(1, 0.5), prop=_fp(9), frameon=False)
+    ax.legend(wedges, leg_labels, loc='upper center',
+              bbox_to_anchor=(0.5, -0.08), prop=_fp(9), frameon=False, ncol=2)
     ax.set_title('收入来源分布', fontsize=18, color=DARK, pad=20, fontproperties=_fp(18))
     plt.tight_layout()
 
@@ -335,10 +335,12 @@ def heatmap_daily(daily_list):
         for c in range(7):
             if not np.isnan(grid[r, c]):
                 amt = grid[r, c]
-                text_color = 'white' if amt > max_amt * 0.5 else DARK
+                # 深色背景用白色文字 + 阴影增强可读性
+                text_color = '#FFFFFF' if amt > max_amt * 0.35 else DARK
                 ax.text(c, r, f'{day_labels[idx]}\n{amt_labels[idx]}',
                         ha='center', va='center', fontsize=7, color=text_color,
-                        fontproperties=_fp(7))
+                        fontproperties=_fp(7),
+                        bbox=dict(boxstyle='round,pad=0.1', facecolor='black', alpha=0.25, edgecolor='none') if amt > max_amt * 0.35 else dict(boxstyle='round,pad=0.1', facecolor='white', alpha=0.55, edgecolor='none'))
                 idx += 1
 
     # 坐标轴

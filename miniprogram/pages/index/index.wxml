@@ -28,6 +28,11 @@
       <view class="loading-dots">
         <view class="dot" wx:for="{{[1,2,3,4]}}" wx:key="*this" style="animation-delay:{{item*0.15}}s;"></view>
       </view>
+      <!-- 提示语 -->
+      <view class="loading-hints">
+        <view class="hint-line">💡 如等待时间过长，可能是网络问题，请耐心等待</view>
+        <view class="hint-line">💡 如生成文件有格式遮挡，请重新生成试试</view>
+      </view>
       <!-- 取消按钮 -->
       <button class="btn-cancel" bindtap="cancelProgress">取消</button>
     </view>
@@ -54,11 +59,33 @@
 
       <!-- 统计卡片 -->
       <view class="stats-grid">
-        <view class="stat-card" wx:for="{{stats}}" wx:key="label" style="border-left-color:{{item.accent}};">
+        <view class="stat-card" wx:for="{{stats}}" wx:key="label" style="border-left-color:{{item.accent}};" bindtap="showDetail" data-idx="{{index}}">
           <view class="stat-value" style="color:{{item.color}};">{{item.value}}</view>
-          <view class="stat-label">{{item.label}}</view>
+          <view class="stat-label">{{item.label}} <text style="font-size:22rpx;opacity:0.3;">›</text></view>
           <view class="stat-en">{{item.en}}</view>
           <view class="stat-sub">{{item.sub}}</view>
+        </view>
+      </view>
+
+      <!-- 详情弹窗 -->
+      <view class="modal-overlay" wx:if="{{showDetailModal}}" bindtap="closeDetail">
+        <view class="modal-card" catchtap="">
+          <view class="modal-close" bindtap="closeDetail">✕</view>
+          <view class="modal-title">{{detailTitle}}</view>
+          <view class="modal-subtitle">{{detailSubtitle}}</view>
+          <view class="detail-content">
+            <view class="detail-formula" wx:if="{{detailFormula}}">{{detailFormula}}</view>
+            <view class="detail-row" wx:for="{{detailItems}}" wx:key="name" wx:for-item="row">
+              <view class="detail-name">{{row.name}}</view>
+              <view class="detail-amount" style="color:{{detailColor}};">{{row.amount}}</view>
+              <view class="detail-pct" wx:if="{{row.pct}}" style="color:{{detailColor}};">{{row.pct}}</view>
+            </view>
+            <view class="detail-total" wx:if="{{detailTotal}}">
+              <view class="detail-name" style="font-weight:600;">合计</view>
+              <view class="detail-amount" style="color:{{detailColor}};font-weight:700;">{{detailTotal}}</view>
+              <view class="detail-pct" wx:if="{{detailTotalPct}}" style="color:{{detailColor}};">{{detailTotalPct}}</view>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -94,6 +121,7 @@
           <view class="bar-wrap" style="flex:1;margin:0 12rpx;"><view class="bar-fill" style="width:{{c.actual/(c.budget||1)*100}}%;background:{{c.status==='over'?'var(--primary)':'var(--positive)'}};"></view></view>
           <view class="comp-amt">¥{{c.actual}}</view>
           <view class="comp-pct" wx:if="{{c.pct_used !== null}}">{{c.pct_used}}%</view>
+          <view class="comp-pct no-budget" wx:else>未列入预算</view>
         </view>
       </view>
 
