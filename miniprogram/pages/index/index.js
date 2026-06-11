@@ -161,9 +161,8 @@ Page({
       wx.showToast({ title: '分析完成', icon: 'success' });
     } catch (err) {
       this.setData({ loading: false, showProgress: false, progressPct: 0 });
-      if (!err.aborted) {
-        const reason = err.message || '未知错误';
-        wx.showToast({ title: '分析失败: ' + reason, icon: 'none', duration: 3000 });
+      if (!err || !err.aborted) {
+        wx.showToast({ title: '分析失败: ' + (err.message || '未知错误'), icon: 'none', duration: 3000 });
       }
     }
   },
@@ -370,6 +369,15 @@ Page({
   onSimPctInput(e) { this.setData({ simPct: parseFloat(e.detail.value) || 0 }); },
 
   // ============ 导出 ============
+  _handleDownloadError(err, label) {
+    this._downloadTask = null;
+    this.setData({ showProgress: false });
+    if (!err || !err.aborted) {
+      const reason = (err && err.message) ? err.message : '网络错误';
+      wx.showToast({ title: label + '生成失败: ' + reason, icon: 'none' });
+    }
+  },
+
   generatePPT() {
     if (!this.data.cacheId) {
       wx.showToast({ title: '请先上传账单', icon: 'none' });
@@ -406,14 +414,7 @@ Page({
       } else {
         wx.showToast({ title: 'PPT 生成失败', icon: 'none' });
       }
-    }).catch((err) => {
-      this._downloadTask = null;
-      this.setData({ showProgress: false });
-      if (!err || !err.aborted) {
-        const reason = (err && err.message) ? err.message : '网络错误';
-        wx.showToast({ title: 'PPT生成失败: ' + reason, icon: 'none' });
-      }
-    });
+    }).catch((err) => this._handleDownloadError(err, 'PPT'));
   },
 
   generatePDF() {
@@ -452,14 +453,7 @@ Page({
       } else {
         wx.showToast({ title: 'PDF 生成失败', icon: 'none' });
       }
-    }).catch((err) => {
-      this._downloadTask = null;
-      this.setData({ showProgress: false });
-      if (!err || !err.aborted) {
-        const reason = (err && err.message) ? err.message : '网络错误';
-        wx.showToast({ title: 'PDF生成失败: ' + reason, icon: 'none' });
-      }
-    });
+    }).catch((err) => this._handleDownloadError(err, 'PDF'));
   },
 
   async createShareSnapshot(data) {

@@ -7,6 +7,15 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 
+try:
+    from PIL import Image as PILImage
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
+
+# EMU conversion: 1 point = 12700 EMU (python-pptx)
+_PT = 12700
+
 
 # ---- 粉色卡通风色板 ----
 C = {
@@ -72,7 +81,6 @@ def _add_text(slide, text, x, y, w, h, size=14, color=C['text'], bold=False,
     tf.margin_right = Pt(margin) if margin > 0 else Pt(0)
     tf.margin_top = Pt(0)
     tf.margin_bottom = Pt(0)
-    return tf
 
 
 def _add_status_dot(slide, x, y, size, color):
@@ -99,12 +107,11 @@ def _add_multiline(slide, lines, x, y, w, h, size=13, color=C['text'],
     if auto_fit and lines:
         non_empty = [l for l in lines if l[0]]
         est_lines = len(non_empty)
-        line_height = Pt(size) * 1.35  # 估算行高
-        total_h = line_height * est_lines
-        if total_h > h:
-            # 缩小字号使其适配
-            ratio = h / total_h
-            actual_size = max(7, int(size * ratio * 0.85))
+        # Estimate: line height ≈ size * 1.35 points, convert h (EMU) to points
+        est_total_pt = size * 1.35 * est_lines
+        box_h_pt = h / _PT  # EMU → points
+        if est_total_pt > box_h_pt and box_h_pt > 0:
+            actual_size = max(7, int(size * box_h_pt / est_total_pt * 0.85))
 
     for i, (text, bold, clr) in enumerate(lines):
         if i == 0:
@@ -131,10 +138,13 @@ def _add_image(slide, buf, x, y, w=None, h=None, max_w=None, max_h=None):
     指定 w 则自动算 h；指定 h 则自动算 w；同时指定则两者都使用。
     指定 max_w / max_h 会在超出时等比缩小。
     """
-    from PIL import Image as PILImage
     buf.seek(0)
-    img = PILImage.open(buf)
-    iw, ih = img.size
+    if _HAS_PIL:
+        img = PILImage.open(buf)
+        iw, ih = img.size
+    else:
+        # Fallback: assume 4:3 aspect ratio
+        iw, ih = 800, 600
     buf.seek(0)
     if w is not None and h is None:
         h = int(w * ih / iw)
@@ -515,7 +525,7 @@ def build_ppt(data, charts):
         pct = amt / inc_total * 100 if inc_total > 0 else 0
         iiy = content_top + i * item_h
         # 自适应字号
-        dyn_size = max(9, min(12, int(item_h / 12700 * 0.38)))
+        dyn_size = max(9, min(12, int(item_h / _PT * 0.38)))
         _add_text(slide, acct, Inches(4.7), iiy, Inches(2.5), Inches(item_h * 0.45),
                   size=dyn_size, color=C['text'])
         _add_text(slide, f'¥{amt:,.2f}', Inches(7.5), iiy, Inches(1.8), Inches(item_h * 0.45),
@@ -585,7 +595,7 @@ def build_ppt(data, charts):
                 _add_status_dot(slide, Inches(7.3), row_y + row_h * 0.1, dot_size, dot_color)
 
                 # 类别名
-                cat_size = max(10, min(13, int(row_h / 12700 * 0.55)))
+                cat_size = max(10, min(13, int(row_h / _PT * 0.55)))
                 _add_text(slide, c['category'], Inches(7.55), row_y, Inches(1.5), row_h * 0.55,
                           size=cat_size, color=C['text'], bold=True)
                 # 金额信息
@@ -678,7 +688,7 @@ def build_ppt(data, charts):
     item_spacing = (summary_end - summary_start) / max(n_conclusions, 1)
     title_h = item_spacing * 0.48
     desc_h = item_spacing * 0.42
-    title_size = max(10, min(13, int(item_spacing / 12700 * 0.55)))
+    title_size = max(10, min(13, int(item_spacing / _PT * 0.55)))
     desc_size = max(8, title_size - 2)
 
     for i, (icon, title, desc) in enumerate(conclusions):

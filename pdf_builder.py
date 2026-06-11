@@ -108,12 +108,16 @@ def _chart_rgb(chart_buf):
 
     chart_buf.seek(0)
     img = PILImage.open(chart_buf)
+    if img.mode == 'RGB':
+        # Already RGB — no conversion needed
+        chart_buf.seek(0)
+        return chart_buf
     if img.mode == 'RGBA':
         # Flatten transparency against white background
         bg = PILImage.new('RGBA', img.size, (255, 255, 255, 255))
         bg.paste(img, (0, 0), img)
         img = bg.convert('RGB')
-    elif img.mode != 'RGB':
+    else:
         img = img.convert('RGB')
     out = BytesIO()
     img.save(out, format='PNG')
@@ -245,9 +249,7 @@ def build_pdf(data, charts):
     content_y = pdf.get_y()
 
     if charts.get('pie_spending'):
-        chart_buf = charts['pie_spending']
-        chart_buf.seek(0)
-        pdf.image(_chart_rgb(chart_buf), x=10, y=content_y, w=130)
+        pdf.image(_chart_rgb(charts['pie_spending']), x=10, y=content_y, w=130)
 
     pdf.set_xy(155, content_y)
     pdf.set_font('CN', 'B', 13)
@@ -291,9 +293,7 @@ def build_pdf(data, charts):
     content_y = pdf.get_y()
 
     if charts.get('bar_food'):
-        chart_buf = charts['bar_food']
-        chart_buf.seek(0)
-        pdf.image(_chart_rgb(chart_buf), x=10, y=content_y, w=140)
+        pdf.image(_chart_rgb(charts['bar_food']), x=10, y=content_y, w=140)
 
     # Food analysis
     food_cats = {c[0]: c[1] for c in data.get('food_list', [])}
@@ -316,9 +316,7 @@ def build_pdf(data, charts):
     pdf.ln(5)
 
     if charts.get('line_weekly'):
-        chart_buf = charts['line_weekly']
-        chart_buf.seek(0)
-        pdf.image(_chart_rgb(chart_buf), x=10, y=pdf.get_y(), w=170)
+        pdf.image(_chart_rgb(charts['line_weekly']), x=10, y=pdf.get_y(), w=170)
 
     # Weekly analysis
     wl = data.get('weekly_list', [])
@@ -342,9 +340,7 @@ def build_pdf(data, charts):
         pdf.cell(0, 12, '每日支出热力图', align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(5)
 
-        chart_buf = charts['heatmap']
-        chart_buf.seek(0)
-        pdf.image(_chart_rgb(chart_buf), x=10, y=pdf.get_y(), w=210)
+        pdf.image(_chart_rgb(charts['heatmap']), x=10, y=pdf.get_y(), w=210)
 
     # ================ 预算对比 ================
     if charts.get('budget_bar') and data.get('budget_comparison'):
@@ -362,9 +358,7 @@ def build_pdf(data, charts):
                      align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(5)
 
-        chart_buf = charts['budget_bar']
-        chart_buf.seek(0)
-        pdf.image(_chart_rgb(chart_buf), x=10, y=pdf.get_y(), w=180)
+        pdf.image(_chart_rgb(charts['budget_bar']), x=10, y=pdf.get_y(), w=180)
 
         # Budget analysis
         over_count = sum(1 for c in bc.get('categories', []) if c['status'] == 'over')
