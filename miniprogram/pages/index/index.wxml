@@ -14,7 +14,10 @@
 
   <!-- 上传区域 -->
   <view class="upload-zone {{hasFile ? 'has-file' : ''}}" bindtap="chooseFile" wx:if="{{!loading}}">
-    <view class="icon">{{hasFile ? '✅' : '📁'}}</view>
+    <view class="icon">
+      <image wx:if="{{!hasFile}}" src="/images/upload-icon.svg" mode="aspectFit" style="width:72rpx;height:72rpx;" />
+      <text wx:if="{{hasFile}}" style="font-size:72rpx;">✅</text>
+    </view>
     <view class="title">{{hasFile ? fileName : '导入 iCost 账单文件'}}</view>
     <view class="desc">{{hasFile ? fileSize + ' · 点击更换' : '支持 .xlsx / .xls 格式 · 从微信聊天文件选择'}}</view>
     <view class="desc" style="font-size:20rpx;color:#C4909E;margin-top:8rpx;">⚠️ 请上传各记账软件导出的账单文件，并非银行流水单</view>

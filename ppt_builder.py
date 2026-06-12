@@ -24,25 +24,37 @@ def _hex_to_rgb(hex_str):
 
 
 # ---- 双主题色板 ----
+# 粉色主题：蝴蝶结可爱甜美系 — 粉红渐变、圆角、柔影、缎带装饰
 _PINK_HEX = {
     'bg': '#FFF0F5', 'card': '#FFFFFF', 'darkBg': '#5C2D3E',
     'primary': '#FF6B8A', 'pink2': '#FF85A2', 'pink3': '#FF9EBB', 'pink4': '#FFB3C6',
     'secondary': '#7BC8A4', 'gold': '#FFD4B8', 'text': '#3D1E2A',
     'muted': '#C4909E', 'positive': '#7BC8A4', 'rose': '#FF7EB3', 'white': '#FFFFFF',
     'danger': '#FF3D6A', 'warning': '#FFD4B8',
+    'accent1': '#FFB3C6', 'accent2': '#FFE4EC', 'line': '#FFD4DF',
+    'font_title': 'Arial', 'font_body': 'Arial',
 }
 
+# 蓝色主题：蜡笔手绘线条极简风 — 留白、线条、几何、粗粝质感
 _BLUE_HEX = {
-    'bg': '#F0F5FF', 'card': '#FFFFFF', 'darkBg': '#1E2A4A',
-    'primary': '#5B8DEF', 'pink2': '#7BA3F5', 'pink3': '#9BB9FB', 'pink4': '#BBCFFF',
-    'secondary': '#5BC8A4', 'gold': '#B8D4FF', 'text': '#2A3550',
-    'muted': '#90A4C4', 'positive': '#5BC8A4', 'rose': '#8BABF5', 'white': '#FFFFFF',
-    'danger': '#EF5B8A', 'warning': '#B8D4FF',
+    'bg': '#FAFBFC', 'card': '#FFFFFF', 'darkBg': '#1E2A4A',
+    'primary': '#3B6FD4', 'pink2': '#5B8DEF', 'pink3': '#7BA3F5', 'pink4': '#A8C8FF',
+    'secondary': '#4BA3C4', 'gold': '#B8D4FF', 'text': '#1A2533',
+    'muted': '#7B8DA0', 'positive': '#4BA3C4', 'rose': '#6B8FDF', 'white': '#FFFFFF',
+    'danger': '#E0556A', 'warning': '#B8D4FF',
+    'accent1': '#D0DDF5', 'accent2': '#E8EEF8', 'line': '#3B6FD4',
+    'font_title': 'Arial', 'font_body': 'Arial',
 }
 
 def _make_c(hex_dict):
-    """将 hex 字典转为 RGBColor 字典。"""
-    return {k: _hex_to_rgb(v) for k, v in hex_dict.items()}
+    """将 hex 字典转为 RGBColor 字典。只转换以 # 开头的 hex 值。"""
+    result = {}
+    for k, v in hex_dict.items():
+        if isinstance(v, str) and v.startswith('#'):
+            result[k] = _hex_to_rgb(v)
+        else:
+            result[k] = v
+    return result
 
 C = _make_c(_PINK_HEX)
 
@@ -103,6 +115,43 @@ def _add_status_dot(slide, x, y, size, color):
     dot.fill.fore_color.rgb = color
     dot.line.fill.background()
     return dot
+
+
+def _add_doodle_line(slide, x, y, w, h, color=None, thickness=2.5):
+    """蓝色主题：手绘蜡笔线条 — 略有不规则感的粗线。"""
+    c = color or C['line']
+    line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, w, Pt(thickness))
+    line.fill.solid(); line.fill.fore_color.rgb = c; line.line.fill.background()
+    line.rotation = -1.5  # 微微倾斜，手绘感
+    return line
+
+
+def _add_doodle_circle(slide, x, y, size, color=None, thickness=2.5):
+    """蓝色主题：手绘风格空心圆 — 粗线条几何装饰。"""
+    c = color or C['line']
+    circ = slide.shapes.add_shape(MSO_SHAPE.OVAL, x, y, size, size)
+    circ.fill.background()
+    circ.line.color.rgb = c
+    circ.line.width = Pt(thickness)
+    return circ
+
+
+def _add_ribbon(slide, x, y, w, h, color=None):
+    """粉色主题：蝴蝶结/缎带装饰条 — 圆角矩形色块。"""
+    c = color or C['primary']
+    ribbon = slide.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE, x, y, w, h)
+    ribbon.fill.solid(); ribbon.fill.fore_color.rgb = c; ribbon.line.fill.background()
+    return ribbon
+
+
+def _add_heart(slide, x, y, size, color=None):
+    """粉色主题：小心形装饰。"""
+    c = color or C['rose']
+    heart = slide.shapes.add_shape(MSO_SHAPE.OVAL, x, y, size, size)
+    heart.fill.solid(); heart.fill.fore_color.rgb = c; heart.line.fill.background()
+    heart.rotation = 45  # 简单近似
+    return heart
 
 
 def _add_multiline(slide, lines, x, y, w, h, size=13, color=C['text'],
@@ -225,30 +274,55 @@ def build_ppt(data, charts, theme='pink'):
     month = data['month']
 
     # ================================================================
-    # SLIDE 1: 封面（重新设计 — 简洁大气）
+    # SLIDE 1: 封面 — 主题差异化设计
     # ================================================================
     slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank
-    bg = slide.background
-    bg.fill.solid()
-    bg.fill.fore_color.rgb = C['darkBg']
+    bg = slide.background; bg.fill.solid()
 
-    # Tiny accent dots
-    for dx, dy in [(3.0, 2.8), (6.5, 3.6), (2.0, 4.2)]:
-        dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(dx), Inches(dy), Inches(0.12), Inches(0.12))
-        dot.fill.solid(); dot.fill.fore_color.rgb = C['pink4']; dot.line.fill.background()
-
-    # Main title area — centered, clear hierarchy
-    _add_text(slide, '🌸  ' + month + '  🌸', Inches(1), Inches(1.6), Inches(8), Inches(0.5),
-              size=18, color=C['pink4'], align=PP_ALIGN.CENTER)
-    _add_text(slide, 'SpendLens', Inches(0.5), Inches(2.2), Inches(9), Inches(0.9),
-              size=44, color=C['white'], bold=True, align=PP_ALIGN.CENTER)
-    # Thin decorative line under title
-    line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(4.2), Inches(3.2), Inches(1.6), Pt(2))
-    line.fill.solid(); line.fill.fore_color.rgb = C['pink4']; line.line.fill.background()
-    _add_text(slide, 'iCost 智能记账  ·  让每一笔都清晰可见', Inches(1.5), Inches(3.5), Inches(7), Inches(0.45),
-              size=15, color=C['muted'], align=PP_ALIGN.CENTER)
-    _add_text(slide, 'YLYT FAMILY  ·  💖  CONFIDENTIAL 💖', Inches(0), Inches(5.1), Inches(10), Inches(0.25),
-              size=9, color=C['muted'], align=PP_ALIGN.CENTER)
+    if theme == 'blue':
+        # 蜡笔手绘极简封面：白底 + 手绘线条装饰
+        bg.fill.fore_color.rgb = _hex_to_rgb('#FAFBFC')
+        # 左上角装饰：手绘风格空心圆
+        _add_doodle_circle(slide, Inches(0.5), Inches(0.5), Inches(1.4), color=C['primary'], thickness=3)
+        _add_doodle_circle(slide, Inches(1.0), Inches(0.9), Inches(0.6), color=C['pink3'], thickness=2)
+        # 右下几何装饰
+        _add_doodle_circle(slide, Inches(8.0), Inches(3.8), Inches(1.8), color=C['accent1'], thickness=2)
+        # 手绘横线装饰
+        for i, (lx, ly, lw) in enumerate([(2.5, 2.0, 5.0), (3.5, 2.4, 3.0)]):
+            _add_doodle_line(slide, Inches(lx), Inches(ly), Inches(lw), Inches(0.1),
+                           color=C['muted'] if i == 1 else C['line'], thickness=2.5 if i == 0 else 1.5)
+        # 标题 — 大号字、充足留白
+        _add_text(slide, month, Inches(1.0), Inches(2.6), Inches(8.0), Inches(0.6),
+                  size=22, color=C['muted'], align=PP_ALIGN.CENTER)
+        _add_text(slide, 'SpendLens', Inches(0.5), Inches(3.0), Inches(9.0), Inches(1.0),
+                  size=48, color=C['text'], bold=True, align=PP_ALIGN.CENTER)
+        _add_text(slide, 'iCost 智能记账  ·  让每一笔都清晰可见', Inches(1.5), Inches(4.2), Inches(7.0), Inches(0.4),
+                  size=14, color=C['muted'], align=PP_ALIGN.CENTER)
+        _add_text(slide, 'YLYT FAMILY', Inches(0), Inches(5.1), Inches(10), Inches(0.25),
+                  size=9, color=C['muted'], align=PP_ALIGN.CENTER)
+    else:
+        # 粉色蝴蝶结甜美封面：深色底 + 缎带装饰
+        bg.fill.fore_color.rgb = C['darkBg']
+        # 顶部缎带装饰条
+        _add_ribbon(slide, Inches(0), Inches(0), Inches(10), Inches(0.08), color=C['primary'])
+        _add_ribbon(slide, Inches(0), Inches(5.55), Inches(10), Inches(0.08), color=C['pink3'])
+        # 角落小心形
+        for hx, hy in [(8.5, 0.5), (1.0, 4.5)]:
+            dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(hx), Inches(hy), Inches(0.15), Inches(0.15))
+            dot.fill.solid(); dot.fill.fore_color.rgb = C['pink4']; dot.line.fill.background()
+        # 标题
+        _add_text(slide, '🎀  ' + month + '  🎀', Inches(1), Inches(1.4), Inches(8), Inches(0.5),
+                  size=18, color=C['pink4'], align=PP_ALIGN.CENTER)
+        _add_text(slide, 'SpendLens', Inches(0.5), Inches(2.0), Inches(9), Inches(0.9),
+                  size=44, color=C['white'], bold=True, align=PP_ALIGN.CENTER)
+        # 缎带装饰线
+        ribbon_bar = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE, Inches(3.5), Inches(3.1), Inches(3.0), Pt(4))
+        ribbon_bar.fill.solid(); ribbon_bar.fill.fore_color.rgb = C['pink3']; ribbon_bar.line.fill.background()
+        _add_text(slide, 'iCost 智能记账  ·  让每一笔都清晰可见', Inches(1.5), Inches(3.5), Inches(7), Inches(0.4),
+                  size=14, color=C['muted'], align=PP_ALIGN.CENTER)
+        _add_text(slide, 'YLYT FAMILY  ·  💖', Inches(0), Inches(5.1), Inches(10), Inches(0.25),
+                  size=9, color=C['muted'], align=PP_ALIGN.CENTER)
 
     # ================================================================
     # SLIDE 2: 总体概况（纯卡片布局，不重复饼图）
@@ -627,15 +701,29 @@ def build_ppt(data, charts, theme='pink'):
                       size=11, color=C['muted'])
 
     # ================================================================
-    # SLIDE 8: 总结 & 建议
+    # SLIDE 8: 总结 & 建议 — 主题差异化设计
     # ================================================================
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    bg = slide.background; bg.fill.solid(); bg.fill.fore_color.rgb = C['darkBg']
+    bg = slide.background; bg.fill.solid()
 
-    _add_text(slide, '🌸 总结 & 建议 🌸', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
-              size=28, color=C['white'], bold=True)
-    _add_text(slide, f'{month} · 财务健康度评估 💖', Inches(0.6), Inches(0.85), Inches(6), Inches(0.3),
-              size=13, color=C['pink4'])
+    if theme == 'blue':
+        # 蜡笔手绘极简总结：白底 + 几何装饰
+        bg.fill.fore_color.rgb = _hex_to_rgb('#FAFBFC')
+        # 右上角几何装饰
+        _add_doodle_circle(slide, Inches(8.6), Inches(0.3), Inches(0.7), color=C['accent1'], thickness=2)
+        _add_doodle_circle(slide, Inches(8.9), Inches(0.6), Inches(0.4), color=C['primary'], thickness=2.5)
+        _add_text(slide, '总结 & 建议', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
+                  size=28, color=C['text'], bold=True)
+        _add_text(slide, f'{month} · 财务健康度评估', Inches(0.6), Inches(0.85), Inches(6), Inches(0.3),
+                  size=13, color=C['muted'])
+    else:
+        # 粉色蝴蝶结甜美总结：深色底 + 缎带
+        bg.fill.fore_color.rgb = C['darkBg']
+        _add_ribbon(slide, Inches(0), Inches(0), Inches(10), Inches(0.06), color=C['primary'])
+        _add_text(slide, '🎀 总结 & 建议', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
+                  size=28, color=C['white'], bold=True)
+        _add_text(slide, f'{month} · 财务健康度评估 💖', Inches(0.6), Inches(0.85), Inches(6), Inches(0.3),
+                  size=13, color=C['pink4'])
 
     # Build smart conclusions from data
     conclusions = []
@@ -708,14 +796,20 @@ def build_ppt(data, charts, theme='pink'):
 
     for i, (icon, title, desc) in enumerate(conclusions):
         cy = summary_start + i * item_spacing
+        title_color = C['white'] if theme != 'blue' else C['text']
+        desc_color = C['muted'] if theme != 'blue' else C['muted']
         _add_text(slide, icon + '  ' + title, Inches(0.8), cy, Inches(8.8), title_h,
-                  size=title_size, color=RGBColor(0xFF, 0xFF, 0xFF), bold=True)
+                  size=title_size, color=title_color, bold=True)
         _add_text(slide, desc, Inches(0.8), cy + title_h, Inches(8.8), desc_h,
-                  size=desc_size, color=C['muted'])
+                  size=desc_size, color=desc_color)
 
-    # Bottom line
-    line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(2), Inches(5.2), Inches(6), Pt(1))
-    line.fill.solid(); line.fill.fore_color.rgb = C['primary']; line.line.fill.background()
+    # Bottom line — theme-specific style
+    if theme == 'blue':
+        _add_doodle_line(slide, Inches(2), Inches(5.2), Inches(6), Inches(0.1),
+                       color=C['accent1'], thickness=1.5)
+    else:
+        ribbon = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(2), Inches(5.2), Inches(6), Pt(3))
+        ribbon.fill.solid(); ribbon.fill.fore_color.rgb = C['primary']; ribbon.line.fill.background()
     _add_text(slide, 'Generated by iCost + AI Analysis  ·  YLYT Family',
               Inches(0), Inches(5.3), Inches(10), Inches(0.25),
               size=8, color=C['muted'], align=PP_ALIGN.CENTER)
