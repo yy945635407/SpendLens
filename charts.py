@@ -59,10 +59,32 @@ plt.xkcd(scale=1, length=100, randomness=2)
 
 # ---- 粉色卡通风色板 ----
 CC = ['#FF6B8A', '#FF85A2', '#FF9EBB', '#FFB3C6', '#FFD4B8',
-      '#FF7EB3', '#C4909E', '#E8A0B4', '#F4B8C8', '#FFCAD4']
+      '#FF7EB3', '#C4909E', '#7BC8A4', '#FFD4DF', '#E8A0B4']
+
+# Blue theme palette
+CC_BLUE = ['#5B8DEF', '#7BA3F5', '#9BB9FB', '#BBCFFF', '#B8D4FF',
+           '#8BABF5', '#90A4C4', '#5BC8A4', '#C8DDFF', '#A0B4E8']
+
 DARK = '#3D1E2A'
 GRAY = '#C4909E'
 LIGHT_GRAY = '#FFD4DF'
+
+THEME_PALETTES = {'pink': CC, 'blue': CC_BLUE}
+
+_current_theme = 'pink'
+
+
+def set_theme(theme):
+    """切换图表主题：'pink' 或 'blue'。"""
+    global _current_theme
+    if theme in THEME_PALETTES:
+        _current_theme = theme
+
+
+def _colors(n=None):
+    """返回当前主题的颜色列表。"""
+    pal = THEME_PALETTES.get(_current_theme, CC)
+    return pal[:n] if n else pal
 
 
 def _fp(size=12):
@@ -123,7 +145,7 @@ def bar_food(food_list, daily_food):
 
     cats = [c[0] for c in food_list]
     vals = [c[1] for c in food_list]
-    bc = ['#E8815F', '#D4A853', '#5B9A8B', '#B0A090'][:len(cats)]
+    bc = _colors(len(cats))
 
     bars = ax.bar(cats, vals, color=bc, width=0.5, edgecolor=DARK, linewidth=1.5, alpha=0.9)
     for bar, val in zip(bars, vals):
@@ -158,10 +180,10 @@ def line_weekly(weekly_list):
     weeks = [w[0] for w in weekly_list]
     wvals = [w[1] for w in weekly_list]
 
-    ax.plot(weeks, wvals, color='#E8815F', linewidth=2.5, marker='o',
+    ax.plot(weeks, wvals, color=_colors()[0], linewidth=2.5, marker='o',
             markersize=10, markerfacecolor='white', markeredgewidth=2,
-            markeredgecolor='#E8815F')
-    ax.fill_between(range(len(weeks)), wvals, alpha=0.15, color='#E8815F')
+            markeredgecolor=_colors()[0])
+    ax.fill_between(range(len(weeks)), wvals, alpha=0.15, color=_colors()[0])
 
     for x, y in zip(weeks, wvals):
         ax.annotate(f'¥{y:,.0f}', (x, y), textcoords="offset points",
@@ -195,7 +217,7 @@ def bar_account(account_list):
     accs = [a[0] for a in account_list]
     pcts = [a[1] / total * 100 for a in account_list]
     amts = [a[1] for a in account_list]
-    bcols = ['#E8815F', '#5B9A8B', '#D4A853', '#B0A090'][:len(accs)]
+    bcols = _colors(len(accs))
 
     bars = ax.barh(accs, pcts, color=bcols, height=0.45, edgecolor=DARK, linewidth=1.5)
     for bar, pct, amt in zip(bars, pcts, amts):
@@ -229,7 +251,7 @@ def doughnut_income(income_list):
     ilabs = [i[0] for i in income_list]
     isizes = [i[1] / total * 100 for i in income_list]
     iexplode = [0.05 if i == 0 else 0 for i in range(len(income_list))]
-    ic = ['#5B9A8B', '#E8815F', '#D4A853', '#B0A090'][:len(ilabs)]
+    ic = _colors(len(ilabs))
 
     wedges, texts, autotexts = ax.pie(
         isizes, explode=iexplode, labels=None, colors=ic,
@@ -322,7 +344,7 @@ def heatmap_daily(daily_list):
     # 粉色渐变热力
     from matplotlib.colors import LinearSegmentedColormap
     cmap = LinearSegmentedColormap.from_list('pink_heat',
-        ['#FFFFFF', '#FFE4EC', '#FFB3C6', '#FF85A2', '#FF6B8A', '#FF3D6A'], N=100)
+        ['#FFFFFF', '#FFE4EC', '#FFB3C6', '#FF85A2', '#FF6B8A', '#5C2D3E'], N=100)
 
     im = ax.imshow(grid, cmap=cmap, aspect='equal', vmin=0, vmax=max_amt)
 
@@ -423,7 +445,7 @@ def bar_budget_vs_actual(cat1_list, budget_config):
     for spine in ['left', 'bottom']:
         ax.spines[spine].set_color(LIGHT_GRAY)
     if total_budget > 0:
-        ax.axhline(y=total_budget, color='#FF3D6A', linestyle='--', linewidth=1.5, alpha=0.6,
+        ax.axhline(y=total_budget, color=_colors()[0], linestyle='--', linewidth=1.5, alpha=0.6,
                    label=f'总预算 ¥{total_budget:,.0f}')
 
     plt.tight_layout()

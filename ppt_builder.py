@@ -17,33 +17,46 @@ except ImportError:
 _PT = 12700
 
 
-# ---- 粉色卡通风色板 ----
-C = {
-    'bg':       RGBColor(0xFF, 0xF0, 0xF5),
-    'card':     RGBColor(0xFF, 0xFF, 0xFF),
-    'darkBg':   RGBColor(0x5C, 0x2D, 0x3E),
-    'primary':  RGBColor(0xFF, 0x6B, 0x8A),
-    'pink2':    RGBColor(0xFF, 0x85, 0xA2),
-    'pink3':    RGBColor(0xFF, 0x9E, 0xBB),
-    'pink4':    RGBColor(0xFF, 0xB3, 0xC6),
-    'secondary':RGBColor(0x7B, 0xC8, 0xA4),
-    'gold':     RGBColor(0xFF, 0xD4, 0xB8),
-    'text':     RGBColor(0x3D, 0x1E, 0x2A),
-    'muted':    RGBColor(0xC4, 0x90, 0x9E),
-    'positive': RGBColor(0x7B, 0xC8, 0xA4),
-    'rose':     RGBColor(0xFF, 0x7E, 0xB3),
-    'white':    RGBColor(0xFF, 0xFF, 0xFF),
+def _hex_to_rgb(hex_str):
+    """'#7BC8A4' → RGBColor"""
+    h = hex_str.lstrip('#')
+    return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+# ---- 双主题色板 ----
+_PINK_HEX = {
+    'bg': '#FFF0F5', 'card': '#FFFFFF', 'darkBg': '#5C2D3E',
+    'primary': '#FF6B8A', 'pink2': '#FF85A2', 'pink3': '#FF9EBB', 'pink4': '#FFB3C6',
+    'secondary': '#7BC8A4', 'gold': '#FFD4B8', 'text': '#3D1E2A',
+    'muted': '#C4909E', 'positive': '#7BC8A4', 'rose': '#FF7EB3', 'white': '#FFFFFF',
+    'danger': '#FF3D6A', 'warning': '#FFD4B8',
 }
+
+_BLUE_HEX = {
+    'bg': '#F0F5FF', 'card': '#FFFFFF', 'darkBg': '#1E2A4A',
+    'primary': '#5B8DEF', 'pink2': '#7BA3F5', 'pink3': '#9BB9FB', 'pink4': '#BBCFFF',
+    'secondary': '#5BC8A4', 'gold': '#B8D4FF', 'text': '#2A3550',
+    'muted': '#90A4C4', 'positive': '#5BC8A4', 'rose': '#8BABF5', 'white': '#FFFFFF',
+    'danger': '#EF5B8A', 'warning': '#B8D4FF',
+}
+
+def _make_c(hex_dict):
+    """将 hex 字典转为 RGBColor 字典。"""
+    return {k: _hex_to_rgb(v) for k, v in hex_dict.items()}
+
+C = _make_c(_PINK_HEX)
 
 CARD_COLORS = [C['pink2'], C['primary'], C['gold'], C['rose'], C['pink3'], C['pink4']]
 SLIDE_W = Inches(10)
 SLIDE_H = Inches(5.625)
 
 
-def _hex_to_rgb(hex_str):
-    """'#7BC8A4' → RGBColor"""
-    h = hex_str.lstrip('#')
-    return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+def set_ppt_theme(theme='pink'):
+    """切换 PPT 主题：'pink' 或 'blue'。"""
+    global C, CARD_COLORS
+    h = _BLUE_HEX if theme == 'blue' else _PINK_HEX
+    C = _make_c(h)
+    CARD_COLORS = [C['pink2'], C['primary'], C['gold'], C['rose'], C['pink3'], C['pink4']]
 
 
 def _add_rect(slide, x, y, w, h, fill=None, shadow=False, accent=None):
@@ -193,16 +206,18 @@ def _ensure_text_on_top(slide):
         spTree.append(el)
 
 
-def build_ppt(data, charts):
+def build_ppt(data, charts, theme='pink'):
     """根据分析数据和图表 BytesIO 生成 PPT，返回 BytesIO。
 
     Args:
         data: analyzer.analyze() 返回的分析字典
         charts: charts.all_charts() 返回的 {name: BytesIO} 字典
-
+        theme: 'pink' 或 'blue'
     Returns:
         BytesIO: 生成的 .pptx 文件
     """
+    set_ppt_theme(theme)
+
     prs = Presentation()
     prs.slide_width = Inches(10)
     prs.slide_height = Inches(5.625)

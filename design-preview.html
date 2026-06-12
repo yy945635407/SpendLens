@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpendLens — Theme Preview (makemepulse inspired)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --spring: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ===== PINK THEME (default) ===== */
+  [data-theme="pink"] {
+    --primary: #FF6B8A; --primary-light: #FFB3C6; --glow: #FFD4DF;
+    --surface: #FFF0F5; --grad1: #FFF0F5; --grad2: #FFE4EC; --grad3: #FFF5F8;
+    --dark: #5C2D3E; --positive: #7BC8A4; --warning: #FFD4B8; --danger: #FF3D6A;
+    --text: #3D1E2A; --muted: #C4909E; --card-bg: rgba(255,255,255,0.65);
+    --card-border: rgba(255,107,138,0.08); --tab-bg: rgba(255,255,255,0.5);
+    --theme-name: 'Sakura Pink';
+  }
+
+  /* ===== BLUE THEME ===== */
+  [data-theme="blue"] {
+    --primary: #5B8DEF; --primary-light: #A8C8FF; --glow: #C8DDFF;
+    --surface: #F0F5FF; --grad1: #F0F5FF; --grad2: #E4ECFF; --grad3: #F5F8FF;
+    --dark: #1E2A4A; --positive: #5BC8A4; --warning: #B8D4FF; --danger: #EF5B8A;
+    --text: #2A3550; --muted: #90A4C4; --card-bg: rgba(255,255,255,0.65);
+    --card-border: rgba(91,141,239,0.08); --tab-bg: rgba(255,255,255,0.5);
+    --theme-name: 'Ocean Blue';
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--grad1); color: var(--text);
+    min-height: 100vh; overflow-x: hidden;
+    transition: background 0.8s var(--spring), color 0.8s var(--spring); }
+
+  /* ===== Particle Canvas ===== */
+  #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; }
+
+  /* ===== Layout ===== */
+  .container { max-width: 880px; margin: 0 auto; padding: 60px 24px 80px; position: relative; z-index: 1; }
+
+  /* ===== Theme Switcher ===== */
+  .theme-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+    padding: 12px 0 40px; }
+  .theme-label { font-size: 11px; font-weight: 500; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em; }
+  .theme-toggle { display: flex; background: var(--tab-bg); border-radius: 9999px;
+    padding: 4px; gap: 2px; backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .theme-btn { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
+    transition: all 0.4s var(--spring); position: relative; }
+  .theme-btn.pink { background: #FF6B8A; }
+  .theme-btn.blue { background: #5B8DEF; }
+  .theme-btn:not(.active) { transform: scale(0.75); opacity: 0.45; filter: saturate(0.6); }
+  .theme-btn.active { transform: scale(1); opacity: 1;
+    box-shadow: 0 0 16px var(--primary), 0 0 32px rgba(255,107,138,0.15); }
+  [data-theme="blue"] .theme-btn.active {
+    box-shadow: 0 0 16px var(--primary), 0 0 32px rgba(91,141,239,0.2); }
+
+  /* ===== Hero ===== */
+  .hero { text-align: center; padding: 40px 0 60px; animation: breatheIn 1s var(--spring) both; }
+  .hero h1 { font-size: 48px; font-weight: 200; letter-spacing: -0.02em;
+    color: var(--dark); margin-bottom: 8px; }
+  .hero h1 span { font-weight: 700; color: var(--primary);
+    transition: color 0.8s var(--spring); }
+  .hero .subtitle { font-size: 18px; font-weight: 300; color: var(--muted);
+    letter-spacing: 0.02em; }
+  .hero .tagline { font-size: 13px; font-weight: 400; color: var(--muted);
+    margin-top: 16px; opacity: 0.7; }
+
+  /* ===== Section ===== */
+  .section { margin-bottom: 48px; }
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .section-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
+    box-shadow: 0 0 12px var(--primary); }
+  .section-title { font-size: 18px; font-weight: 600; color: var(--dark); }
+
+  /* ===== Glass Cards ===== */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  .glass-card { background: var(--card-bg); backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border); border-radius: 16px; padding: 24px;
+    box-shadow: 0 2px 20px rgba(92,45,62,0.06);
+    opacity: 0; transform: translateY(40px) scale(0.98); }
+  .glass-card.visible { animation: riseIn 0.6s var(--spring) forwards; }
+
+  /* Stat Cards */
+  .stat-card { background: var(--card-bg); backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border); border-radius: 16px; padding: 20px 24px;
+    box-shadow: 0 2px 20px rgba(92,45,62,0.06);
+    border-left: 3px solid var(--primary); min-width: 0; }
+  .stat-card.visible { animation: riseIn 0.6s var(--spring) forwards; }
+  .stat-value { font-size: 28px; font-weight: 200; color: var(--dark);
+    letter-spacing: -0.01em; line-height: 1.1; }
+  .stat-label { font-size: 13px; font-weight: 500; color: var(--primary); margin-top: 4px; }
+  .stat-en { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Upload Zone */
+  .upload-zone { background: var(--card-bg); backdrop-filter: blur(12px);
+    border: 2px dashed var(--glow); border-radius: 16px; padding: 40px; text-align: center;
+    box-shadow: 0 2px 20px rgba(92,45,62,0.04); cursor: pointer;
+    transition: all 0.3s var(--spring); }
+  .upload-zone:hover { border-color: var(--primary); background: rgba(255,255,255,0.8);
+    transform: scale(1.01); box-shadow: 0 8px 40px rgba(92,45,62,0.08); }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-title { font-size: 17px; font-weight: 500; color: var(--dark); }
+  .upload-desc { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* Tab Bar */
+  .tab-bar { display: inline-flex; gap: 4px; background: var(--tab-bg);
+    backdrop-filter: blur(8px); border-radius: 9999px; padding: 4px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  .tab { padding: 10px 22px; border-radius: 9999px; font-size: 14px; font-weight: 500;
+    cursor: pointer; color: var(--muted); transition: all 0.3s var(--spring);
+    border: none; background: none; }
+  .tab.active { background: var(--primary); color: #fff;
+    box-shadow: 0 4px 16px rgba(255,107,138,0.25); }
+  [data-theme="blue"] .tab.active { box-shadow: 0 4px 16px rgba(91,141,239,0.25); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font);
+    cursor: pointer; transition: all 0.2s var(--spring); border: none; }
+  .btn-primary { background: var(--primary); color: #fff; font-weight: 600;
+    border-radius: 9999px; padding: 12px 28px; font-size: 15px;
+    box-shadow: 0 4px 20px rgba(255,107,138,0.25); }
+  [data-theme="blue"] .btn-primary { box-shadow: 0 4px 20px rgba(91,141,239,0.25); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(255,107,138,0.30); }
+  [data-theme="blue"] .btn-primary:hover { box-shadow: 0 8px 32px rgba(91,141,239,0.30); }
+  .btn-secondary { background: transparent; color: var(--primary); font-weight: 500;
+    border: 1px solid var(--glow); border-radius: 9999px; padding: 10px 24px; font-size: 14px; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.5); }
+
+  /* Progress */
+  .progress-wrap { display: flex; align-items: center; gap: 12px; }
+  .progress-track { flex: 1; height: 4px; background: rgba(255,107,138,0.1);
+    border-radius: 9999px; overflow: hidden; }
+  [data-theme="blue"] .progress-track { background: rgba(91,141,239,0.1); }
+  .progress-fill { height: 100%; background: var(--primary); border-radius: 9999px;
+    width: 65%; transition: width 1s var(--spring); }
+
+  /* Dark card */
+  .dark-card { background: var(--dark); border-radius: 20px; padding: 48px;
+    text-align: center; color: #fff;
+    box-shadow: 0 8px 40px rgba(92,45,62,0.08); }
+  [data-theme="blue"] .dark-card { box-shadow: 0 8px 40px rgba(30,42,74,0.10); }
+  .dark-card h2 { font-size: 32px; font-weight: 200; margin-bottom: 4px; }
+  .dark-card p { font-size: 16px; font-weight: 300; opacity: 0.7; }
+  .dark-line { width: 120px; height: 2px; background: var(--primary); margin: 20px auto; }
+
+  /* Color display */
+  .palette-strip { display: flex; border-radius: 12px; overflow: hidden; height: 40px; margin-bottom: 8px; }
+  .palette-strip div { flex: 1; }
+  .palette-label { font-size: 11px; font-family: var(--mono); color: var(--muted);
+    display: flex; justify-content: space-between; }
+
+  /* Theme comparison */
+  .theme-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .theme-col { text-align: center; }
+  .theme-col h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .theme-dot { display: inline-block; width: 60px; height: 60px; border-radius: 50%;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+
+  @keyframes breatheIn {
+    from { opacity: 0; transform: scale(1.04); filter: blur(8px); }
+    to { opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(40px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.35; }
+    25% { transform: translateY(-20px) translateX(10px); opacity: 0.7; }
+    50% { transform: translateY(-10px) translateX(-5px); opacity: 0.5; }
+    75% { transform: translateY(-30px) translateX(15px); opacity: 0.25; }
+  }
+</style>
+</head>
+<body data-theme="pink">
+
+<canvas id="particles"></canvas>
+
+<div class="container">
+
+  <!-- Theme Switcher -->
+  <div class="theme-bar">
+    <span class="theme-label">Theme</span>
+    <div class="theme-toggle">
+      <button class="theme-btn pink active" onclick="switchTheme('pink')" title="Sakura Pink"></button>
+      <button class="theme-btn blue" onclick="switchTheme('blue')" title="Ocean Blue"></button>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1><span>SpendLens</span></h1>
+    <p class="subtitle">看得见的生活</p>
+    <p class="tagline">Every number has a story</p>
+  </div>
+
+  <!-- Upload Zone -->
+  <div class="section">
+    <div class="glass-card" style="padding:0;">
+      <div class="upload-zone">
+        <div class="upload-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 10C6 8 7.5 6.5 9.5 6.5H18L21.5 10.5H38.5C40.5 10.5 42 12 42 14V36C42 38.5 40.5 40 38.5 40H9.5C7 40 6 38.5 6 36V10Z"
+              stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M6 16H42" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
+          </svg>
+        </div>
+        <div class="upload-title">导入 iCost 账单文件</div>
+        <div class="upload-desc">支持 .xlsx / .xls 格式 · 从微信聊天文件选择</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot"></div>
+      <div class="section-title">总体概览</div>
+    </div>
+    <div class="grid-3">
+      <div class="stat-card"><div class="stat-value">¥12,580</div><div class="stat-label">总收入</div><div class="stat-en">Total Income · 8笔</div></div>
+      <div class="stat-card" style="border-left-color:var(--positive);"><div class="stat-value" style="color:var(--positive);">¥9,420</div><div class="stat-label" style="color:var(--positive);">总支出</div><div class="stat-en">Total Expense · 42笔</div></div>
+      <div class="stat-card" style="border-left-color:var(--primary-light);"><div class="stat-value" style="color:var(--primary-light);">¥3,160</div><div class="stat-label" style="color:var(--primary-light);">结余 · 25.1%</div><div class="stat-en">Balance · Savings Rate</div></div>
+    </div>
+  </div>
+
+  <!-- Tabs + Actions -->
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+      <div class="tab-bar">
+        <button class="tab active">📋 概览</button>
+        <button class="tab">💸 预算</button>
+        <button class="tab">🏷️ 规则</button>
+        <button class="tab">🔮 模拟</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary">生成 PPT</button>
+        <button class="btn btn-secondary">📥 下载 PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="section">
+    <div class="glass-card">
+      <div style="font-size:14px;font-weight:600;color:var(--dark);margin-bottom:8px;">正在分析账单…</div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill"></div></div>
+        <span style="font-size:13px;font-family:var(--mono);font-weight:500;color:var(--primary);">65%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart placeholder -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot"></div>
+      <div class="section-title">支出结构</div>
+    </div>
+    <div class="grid-2">
+      <div class="glass-card" style="min-height:200px;display:flex;align-items:center;justify-content:center;">
+        <span style="color:var(--muted);font-size:14px;font-weight:300;">📊 饼图区域</span>
+      </div>
+      <div class="glass-card" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;font-weight:600;color:var(--dark);">支出分类明细</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>🥡 餐饮</span><span style="font-family:var(--mono);">¥2,400</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>🏠 住房</span><span style="font-family:var(--mono);">¥2,000</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>🚗 交通</span><span style="font-family:var(--mono);">¥1,200</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);"><span>⋯ 其他 5 项</span><span style="font-family:var(--mono);">¥3,820</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark Card (Cover style) -->
+  <div class="section">
+    <div class="dark-card">
+      <h2>2026年6月</h2>
+      <p>SpendLens</p>
+      <div class="dark-line"></div>
+      <p style="font-size:15px;line-height:1.8;">看得见的生活<br>Every number has a story</p>
+    </div>
+  </div>
+
+  <!-- Side-by-side palette comparison -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot"></div>
+      <div class="section-title">双主题色板对比</div>
+    </div>
+    <div class="theme-compare">
+      <div class="theme-col">
+        <div class="theme-dot" style="background:#FF6B8A;"></div>
+        <h3 style="color:#FF6B8A;">Sakura Pink</h3>
+        <div class="palette-strip">
+          <div style="background:#FFF0F5;"></div><div style="background:#FFE4EC;"></div>
+          <div style="background:#FFD4DF;"></div><div style="background:#FFB3C6;"></div>
+          <div style="background:#FF85A2;"></div><div style="background:#FF6B8A;"></div>
+          <div style="background:#5C2D3E;"></div>
+        </div>
+        <div class="palette-label"><span>#FFF0F5 →</span><span>→ #5C2D3E</span></div>
+      </div>
+      <div class="theme-col">
+        <div class="theme-dot" style="background:#5B8DEF;"></div>
+        <h3 style="color:#5B8DEF;">🌊 Ocean Blue</h3>
+        <div class="palette-strip">
+          <div style="background:#F0F5FF;"></div><div style="background:#E4ECFF;"></div>
+          <div style="background:#C8DDFF;"></div><div style="background:#A8C8FF;"></div>
+          <div style="background:#7BA3F5;"></div><div style="background:#5B8DEF;"></div>
+          <div style="background:#1E2A4A;"></div>
+        </div>
+        <div class="palette-label"><span>#F0F5FF →</span><span>→ #1E2A4A</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Particles + Animation Script -->
+<script>
+  // ===== Theme switcher =====
+  function switchTheme(t) {
+    document.body.dataset.theme = t;
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.theme-btn.${t}`).classList.add('active');
+    initParticles();
+  }
+
+  // ===== Scroll-triggered card animations (staggered riseIn) =====
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        const cards = entry.target.querySelectorAll('.glass-card, .stat-card');
+        cards.forEach((card, j) => {
+          card.style.animationDelay = (j * 0.08) + 's';
+          card.classList.add('visible');
+        });
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+  // ===== Floating particles (makemepulse-inspired atmosphere) =====
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animId;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function initParticles() {
+    const theme = document.body.dataset.theme;
+    const colors = theme === 'pink'
+      ? ['#FFB3C6','#FFD4DF','#FF9EBB','#FF85A2','#FFC8D4']
+      : ['#A8C8FF','#C8DDFF','#9BB9FB','#7BA3F5','#BBCFFF'];
+    particles = [];
+    const count = Math.min(25, Math.floor(window.innerWidth * window.innerHeight / 40000));
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 1.5 + Math.random() * 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3 - 0.15,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.3 + Math.random() * 0.7,
+      });
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx + Math.sin(Date.now() * 0.0005 + p.phase) * 0.2;
+      p.y += p.vy + Math.cos(Date.now() * 0.0007 + p.phase) * 0.15;
+      if (p.x < -20) p.x = canvas.width + 20;
+      if (p.x > canvas.width + 20) p.x = -20;
+      if (p.y < -20) p.y = canvas.height + 20;
+      if (p.y > canvas.height + 20) p.y = -20;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 0.35 + Math.sin(Date.now() * 0.001 * p.speed + p.phase) * 0.2;
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    animId = requestAnimationFrame(animate);
+  }
+
+  initParticles();
+  animate();
+
+  // Trigger initial visible cards
+  setTimeout(() => {
+    document.querySelectorAll('.section').forEach(s => {
+      s.querySelectorAll('.glass-card, .stat-card').forEach((card, j) => {
+        card.style.animationDelay = (j * 0.08) + 's';
+        card.classList.add('visible');
+      });
+    });
+  }, 200);
+</script>
+</body>
+</html>

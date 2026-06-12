@@ -11,13 +11,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+  /* ===== PINK THEME (default) ===== */
   :root {
-    --pink: #FF6B8A; --dark: #5C2D3E; --mint: #7BC8A4;
-    --gold: #FFD4B8; --bg: #FFF0F5;
-    --text: #1A1A1A; --muted: rgba(0,0,0,0.45);
-    --border: rgba(0,0,0,0.06);
-    --ease-out: 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    --primary: #FF6B8A; --primary-light: #FFB3C6; --glow: #FFD4DF;
+    --surface: #FFF0F5; --grad1: #FFF0F5; --grad2: #FFE4EC; --grad3: #FFF5F8;
+    --dark: #5C2D3E; --positive: #7BC8A4; --warning: #FFD4B8; --danger: #FF3D6A;
+    --text: #3D1E2A; --muted: #C4909E;
+    --card-bg: rgba(255,255,255,0.65); --card-border: rgba(255,107,138,0.08);
+    --tab-bg: rgba(255,255,255,0.5);
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
+  [data-theme="blue"] {
+    --primary: #5B8DEF; --primary-light: #A8C8FF; --glow: #C8DDFF;
+    --surface: #F0F5FF; --grad1: #F0F5FF; --grad2: #E4ECFF; --grad3: #F5F8FF;
+    --dark: #1E2A4A; --positive: #5BC8A4; --warning: #B8D4FF; --danger: #EF5B8A;
+    --text: #2A3550; --muted: #90A4C4;
+    --card-bg: rgba(255,255,255,0.65); --card-border: rgba(91,141,239,0.08);
+    --tab-bg: rgba(255,255,255,0.5);
+  }
+
+  /* Legacy aliases */
+  :root { --pink: var(--primary); --mint: var(--positive); --gold: var(--warning); --bg: var(--surface); --border: var(--card-border); }
+  [data-theme="blue"] { --pink: var(--primary); --mint: var(--positive); --gold: var(--warning); --bg: var(--surface); --border: var(--card-border); }
 
   * { margin:0; padding:0; box-sizing:border-box; }
   html { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; scroll-behavior:smooth; }
@@ -25,9 +40,13 @@
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
     font-weight: 300;
-    background: linear-gradient(180deg, #FFF0F5 0%, #FAFAFA 25%, #FAFAFA 100%);
+    background: linear-gradient(135deg, var(--grad1) 0%, var(--grad2) 40%, var(--grad3) 100%);
     color: var(--text); min-height: 100vh; overflow-x: hidden;
+    transition: background 0.8s var(--ease-out), color 0.8s var(--ease-out);
   }
+
+  /* ===== Particle Canvas ===== */
+  #particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
   .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; font-weight: 400; }
   .tracking-ultra { letter-spacing: 0.2em; }
   .text-balance { text-wrap: balance; }
@@ -42,8 +61,20 @@
     border-radius: 9999px; font-size: 10px; font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.15em; text-transform: uppercase;
     background: rgba(255,107,138,0.08); border: 1px solid rgba(255,107,138,0.15);
-    color: var(--pink);
+    color: var(--primary);
   }
+
+  /* Theme Switcher */
+  .theme-switch {
+    display: inline-flex; gap: 6px; background: var(--tab-bg); border-radius: 9999px;
+    padding: 4px; backdrop-filter: blur(8px); margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .theme-dot { width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; transition: all 0.4s var(--ease-out); }
+  .theme-dot.pink { background: #FF6B8A; }
+  .theme-dot.blue { background: #5B8DEF; }
+  .theme-dot:not(.active) { transform: scale(0.7); opacity: 0.45; filter: saturate(0.6); }
+  .theme-dot.active { box-shadow: 0 0 12px var(--primary); }
   .header-logo {
     display: block; margin: 0 auto 16px; width: 80px; height: 80px;
     filter: drop-shadow(0 4px 16px rgba(255,107,138,0.18));
@@ -435,7 +466,13 @@
 </head>
 <body>
 
+<canvas id="particles"></canvas>
+
 <div class="header">
+  <div class="theme-switch" id="themeSwitch">
+    <button class="theme-dot pink active" onclick="switchTheme('pink')" title="Sakura Pink"></button>
+    <button class="theme-dot blue" onclick="switchTheme('blue')" title="Ocean Blue"></button>
+  </div>
   <div class="header-badge">Bill + Lens · 账单洞察</div>
   <!-- SpendLens Logo -->
   <svg class="header-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -471,7 +508,12 @@
 
   <!-- Upload -->
   <div class="upload-zone section-block" id="uploadZone">
-    <span class="upload-icon icon">📁</span>
+    <span class="upload-icon icon">
+      <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 10C6 8 7.5 6.5 9.5 6.5H18L21.5 10.5H38.5C40.5 10.5 42 12 42 14V36C42 38.5 40.5 40 38.5 40H9.5C7 40 6 38.5 6 36V10Z" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M6 16H42" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
+      </svg>
+    </span>
     <h3>导入 iCost 账单文件</h3>
     <p>拖拽到此处，或点击选择文件</p>
     <div class="upload-hint">
@@ -1078,6 +1120,64 @@
   function closeDetail() {
     $('detailModal').classList.add('hidden');
   }
+
+  // ===== Theme Switcher =====
+  function switchTheme(t) {
+    document.documentElement.dataset.theme = t;
+    document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+    document.querySelector(`.theme-dot.${t}`).classList.add('active');
+    localStorage.setItem('spendlens-theme', t);
+    initParticles();
+  }
+  // Load saved theme
+  (function() {
+    const saved = localStorage.getItem('spendlens-theme');
+    if (saved === 'blue') switchTheme('blue');
+  })();
+
+  // ===== Floating Particles =====
+  const ptCanvas = document.getElementById('particles');
+  const ptCtx = ptCanvas.getContext('2d');
+  let ptArr = [];
+
+  function ptResize() { ptCanvas.width = window.innerWidth; ptCanvas.height = window.innerHeight; }
+  window.addEventListener('resize', ptResize); ptResize();
+
+  function initParticles() {
+    const theme = document.documentElement.dataset.theme || 'pink';
+    const colors = theme === 'pink'
+      ? ['#FFB3C6','#FFD4DF','#FF9EBB','#FF85A2','#FFC8D4']
+      : ['#A8C8FF','#C8DDFF','#9BB9FB','#7BA3F5','#BBCFFF'];
+    ptArr = [];
+    const count = Math.min(25, Math.floor(window.innerWidth * window.innerHeight / 40000));
+    for (let i = 0; i < count; i++) {
+      ptArr.push({
+        x: Math.random() * ptCanvas.width, y: Math.random() * ptCanvas.height,
+        r: 1.5 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3 - 0.15,
+        phase: Math.random() * Math.PI * 2, speed: 0.3 + Math.random() * 0.7
+      });
+    }
+  }
+
+  function ptAnimate() {
+    ptCtx.clearRect(0, 0, ptCanvas.width, ptCanvas.height);
+    ptArr.forEach(p => {
+      p.x += p.vx + Math.sin(Date.now() * 0.0005 + p.phase) * 0.2;
+      p.y += p.vy + Math.cos(Date.now() * 0.0007 + p.phase) * 0.15;
+      if (p.x < -20) p.x = ptCanvas.width + 20;
+      if (p.x > ptCanvas.width + 20) p.x = -20;
+      if (p.y < -20) p.y = ptCanvas.height + 20;
+      if (p.y > ptCanvas.height + 20) p.y = -20;
+      ptCtx.beginPath(); ptCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ptCtx.fillStyle = p.color;
+      ptCtx.globalAlpha = 0.35 + Math.sin(Date.now() * 0.001 * p.speed + p.phase) * 0.2;
+      ptCtx.fill();
+    });
+    ptCtx.globalAlpha = 1;
+    requestAnimationFrame(ptAnimate);
+  }
+  initParticles(); ptAnimate();
 </script>
 </body>
 </html>

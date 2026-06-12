@@ -48,22 +48,44 @@ def _find_pdf_font():
 PDF_FONT_PATH = _find_pdf_font()
 
 
-# ---- 粉色卡通风色板 ----
-C = {
-    'darkBg':   (0x5C, 0x2D, 0x3E),
-    'primary':  (0xFF, 0x6B, 0x8A),
-    'pink2':    (0xFF, 0x85, 0xA2),
-    'pink3':    (0xFF, 0x9E, 0xBB),
-    'pink4':    (0xFF, 0xB3, 0xC6),
-    'secondary':(0x7B, 0xC8, 0xA4),
-    'gold':     (0xFF, 0xD4, 0xB8),
-    'text':     (0x3D, 0x1E, 0x2A),
-    'muted':    (0xC4, 0x90, 0x9E),
-    'white':    (0xFF, 0xFF, 0xFF),
-    'bg':       (0xFF, 0xF0, 0xF5),
-    'positive': (0x7B, 0xC8, 0xA4),
-    'rose':     (0xFF, 0x7E, 0xB3),
+def _rgb_tuple(val):
+    """Convert hex string '#RGB' or tuple (R,G,B) to integer tuple for fpdf2."""
+    if isinstance(val, str) and val.startswith('#'):
+        h = val.lstrip('#')
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+    if isinstance(val, tuple):
+        return tuple(int(v) for v in val)
+    return (0, 0, 0)
+
+
+# ---- 双主题色板 ----
+_PINK_HEX = {
+    'darkBg': '#5C2D3E', 'primary': '#FF6B8A', 'pink2': '#FF85A2',
+    'pink3': '#FF9EBB', 'pink4': '#FFB3C6', 'secondary': '#7BC8A4',
+    'gold': '#FFD4B8', 'text': '#3D1E2A', 'muted': '#C4909E',
+    'white': '#FFFFFF', 'bg': '#FFF0F5', 'positive': '#7BC8A4',
+    'rose': '#FF7EB3', 'danger': '#FF3D6A', 'warning': '#FFD4B8',
 }
+
+_BLUE_HEX = {
+    'darkBg': '#1E2A4A', 'primary': '#5B8DEF', 'pink2': '#7BA3F5',
+    'pink3': '#9BB9FB', 'pink4': '#BBCFFF', 'secondary': '#5BC8A4',
+    'gold': '#B8D4FF', 'text': '#2A3550', 'muted': '#90A4C4',
+    'white': '#FFFFFF', 'bg': '#F0F5FF', 'positive': '#5BC8A4',
+    'rose': '#8BABF5', 'danger': '#EF5B8A', 'warning': '#B8D4FF',
+}
+
+def _make_pdf_c(hex_dict):
+    """将 hex 字典转为 fpdf2 RGB 元组字典。"""
+    return {k: _rgb_tuple(v) for k, v in hex_dict.items()}
+
+C = _make_pdf_c(_PINK_HEX)
+
+
+def set_pdf_theme(theme='pink'):
+    """切换 PDF 主题：'pink' 或 'blue'。"""
+    global C
+    C = _make_pdf_c(_BLUE_HEX if theme == 'blue' else _PINK_HEX)
 
 
 class BillPDF(FPDF):
@@ -84,16 +106,6 @@ class BillPDF(FPDF):
         self.set_font('CN', '', 8)
         self.set_text_color(*C['muted'])
         self.cell(0, 10, f'Page {self.page_no() - 1}', align='C')
-
-
-def _rgb_tuple(val):
-    """Convert hex string '#RGB' or tuple (R,G,B) to integer tuple for fpdf2."""
-    if isinstance(val, str) and val.startswith('#'):
-        h = val.lstrip('#')
-        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
-    if isinstance(val, tuple):
-        return tuple(int(v) for v in val)
-    return (0, 0, 0)
 
 
 def _chart_rgb(chart_buf):
@@ -125,16 +137,18 @@ def _chart_rgb(chart_buf):
     return out
 
 
-def build_pdf(data, charts):
+def build_pdf(data, charts, theme='pink'):
     """生成 PDF 报告，返回 BytesIO。
 
     Args:
         data: 分析数据字典
         charts: 图表 BytesIO 字典
+        theme: 'pink' 或 'blue'
 
     Returns:
         BytesIO: PDF 文件
     """
+    set_pdf_theme(theme)
     pdf = BillPDF(orientation='L')
     pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_font('CN', '', PDF_FONT_PATH)
