@@ -71,14 +71,22 @@ LIGHT_GRAY = '#FFD4DF'
 
 THEME_PALETTES = {'pink': CC, 'blue': CC_BLUE}
 
+# Theme-specific non-palette colors
+THEME_DARK = {'pink': '#3D1E2A', 'blue': '#1E2A4A'}
+THEME_GRAY = {'pink': '#C4909E', 'blue': '#90A4C4'}
+THEME_LIGHT_GRAY = {'pink': '#FFD4DF', 'blue': '#C8DDFF'}
+
 _current_theme = 'pink'
 
 
 def set_theme(theme):
     """切换图表主题：'pink' 或 'blue'。"""
-    global _current_theme
+    global _current_theme, DARK, GRAY, LIGHT_GRAY
     if theme in THEME_PALETTES:
         _current_theme = theme
+        DARK = THEME_DARK[theme]
+        GRAY = THEME_GRAY[theme]
+        LIGHT_GRAY = THEME_LIGHT_GRAY[theme]
 
 
 def _colors(n=None):
@@ -111,7 +119,7 @@ def pie_spending(cat1_list):
     explode = [0.05 if i == 0 else 0 for i in range(len(cat1_list))]
 
     wedges, texts, autotexts = ax.pie(
-        sizes, explode=explode, labels=None, colors=CC[:len(cat1_list)],
+        sizes, explode=explode, labels=None, colors=_colors(len(cat1_list)),
         autopct='%1.1f%%', startangle=140, pctdistance=0.78,
         wedgeprops={'width': 0.45, 'edgecolor': 'white', 'linewidth': 2},
     )
@@ -341,10 +349,13 @@ def heatmap_daily(daily_list):
             grid[r, c] = amounts[day_idx]
             day_idx += 1
 
-    # 粉色渐变热力
+    # 主题渐变热力
     from matplotlib.colors import LinearSegmentedColormap
-    cmap = LinearSegmentedColormap.from_list('pink_heat',
-        ['#FFFFFF', '#FFE4EC', '#FFB3C6', '#FF85A2', '#FF6B8A', '#5C2D3E'], N=100)
+    if _current_theme == 'blue':
+        heat_colors = ['#FFFFFF', '#E0EBFF', '#BBCFFF', '#7BA3F5', '#5B8DEF', '#1E2A4A']
+    else:
+        heat_colors = ['#FFFFFF', '#FFE4EC', '#FFB3C6', '#FF85A2', '#FF6B8A', '#5C2D3E']
+    cmap = LinearSegmentedColormap.from_list('theme_heat', heat_colors, N=100)
 
     im = ax.imshow(grid, cmap=cmap, aspect='equal', vmin=0, vmax=max_amt)
 
@@ -427,8 +438,8 @@ def bar_budget_vs_actual(cat1_list, budget_config):
     x = np.arange(len(cats))
     w = 0.35
 
-    bars1 = ax.bar(x - w/2, actuals, w, color='#FF6B8A', edgecolor=DARK, linewidth=1, label='实际支出')
-    bars2 = ax.bar(x + w/2, budgets, w, color='#FFD4DF', edgecolor=DARK, linewidth=1, label='预算')
+    bars1 = ax.bar(x - w/2, actuals, w, color=_colors()[0], edgecolor=DARK, linewidth=1, label='实际支出')
+    bars2 = ax.bar(x + w/2, budgets, w, color=_colors()[8], edgecolor=DARK, linewidth=1, label='预算')
 
     for bar, val in zip(bars1, actuals):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(actuals)*0.02,
@@ -488,9 +499,9 @@ def bar_compare_monthly(compare_data):
     prev_vals = [c['prev'] for c in cats_to_show]
     curr_vals = [c['curr'] for c in cats_to_show]
 
-    bars1 = ax.bar(x - w/2, prev_vals, w, color='#FFD4DF', edgecolor=DARK, linewidth=1,
+    bars1 = ax.bar(x - w/2, prev_vals, w, color=_colors()[8], edgecolor=DARK, linewidth=1,
                    label=compare_data.get('prev_month', '上月'))
-    bars2 = ax.bar(x + w/2, curr_vals, w, color='#FF6B8A', edgecolor=DARK, linewidth=1,
+    bars2 = ax.bar(x + w/2, curr_vals, w, color=_colors()[0], edgecolor=DARK, linewidth=1,
                    label=compare_data.get('curr_month', '本月'))
 
     # 标注变化
