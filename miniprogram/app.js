@@ -6,6 +6,7 @@ App({
     analysisData: null,
     cacheId: null,
     budgetConfig: { monthly_total: 8000, categories: {} },
-    autoRules: []
+    autoRules: [],
+    theme: 'pink'  // 'pink' 或 'blue'
   }
 });

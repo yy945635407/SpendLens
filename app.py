@@ -197,7 +197,8 @@ def generate_route():
         # 附加新图表
         charts['heatmap'] = heatmap_daily(data['daily_list'])
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], load_budget())
-        ppt_buf = build_ppt(data, charts)
+        theme = request.form.get('theme', 'pink')
+        ppt_buf = build_ppt(data, charts, theme=theme)
         os.unlink(tmp_path)
 
         # 生成文件名
@@ -319,7 +320,8 @@ def generate_ppt_from_cache(cache_id):
         charts['heatmap'] = heatmap_daily(data['daily_list'])
         budget_cfg = load_budget()
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], budget_cfg)
-        ppt_buf = build_ppt(data, charts)
+        theme = request.args.get('theme', 'pink')
+        ppt_buf = build_ppt(data, charts, theme=theme)
 
         filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pptx"
         return send_file(
@@ -346,7 +348,8 @@ def generate_pdf_from_cache(cache_id):
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], budget_cfg)
 
         from pdf_builder import build_pdf
-        pdf_buf = build_pdf(data, charts)
+        theme = request.args.get('theme', 'pink')
+        pdf_buf = build_pdf(data, charts, theme=theme)
 
         filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pdf"
         return send_file(
@@ -383,7 +386,8 @@ def generate_pdf_route():
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], load_budget())
 
         from pdf_builder import build_pdf
-        pdf_buf = build_pdf(data, charts)
+        theme = request.form.get('theme', 'pink')
+        pdf_buf = build_pdf(data, charts, theme=theme)
         os.unlink(tmp_path)
 
         filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pdf"

@@ -5,6 +5,7 @@ const { fmtMoney, fmtInt, fmtPct } = require('../../utils/format');
 Page({
   data: {
     // 状态
+    theme: 'pink',
     hasFile: false,
     fileName: '',
     fileSize: '',
@@ -69,8 +70,31 @@ Page({
   },
 
   onLoad() {
+    // 恢复保存的主题
+    const saved = wx.getStorageSync('spendlens-theme') || 'pink';
+    this._applyTheme(saved);
     this.loadBudgetConfig();
     this.loadRules();
+  },
+
+  _applyTheme(t) {
+    const isBlue = t === 'blue';
+    const vars = isBlue
+      ? '--primary:#5B8DEF;--primary-light:#A8C8FF;--glow:#C8DDFF;--dark:#1E2A4A;--text:#2A3550;--muted:#90A4C4;--positive:#5BC8A4;--gold:#B8D4FF;--bg:#F0F5FF;--card-bg:rgba(255,255,255,0.65);--card-border:rgba(91,141,239,0.08);'
+      : '--primary:#FF6B8A;--primary-light:#FFB3C6;--glow:#FFD4DF;--dark:#5C2D3E;--text:#3D1E2A;--muted:#C4909E;--positive:#7BC8A4;--gold:#FFD4B8;--bg:#FFF0F5;--card-bg:rgba(255,255,255,0.65);--card-border:rgba(255,107,138,0.08);';
+    const bg = isBlue
+      ? 'background:linear-gradient(135deg,#F0F5FF,#E4ECFF,#F5F8FF);'
+      : 'background:linear-gradient(135deg,#FFF0F5,#FFE4EC,#FFF5F8);';
+    this.setData({ theme: t, containerStyle: vars + bg });
+    app.globalData.theme = t;
+    wx.setBackgroundColor({ backgroundColor: isBlue ? '#F0F5FF' : '#FFF0F5', backgroundColorTop: isBlue ? '#F0F5FF' : '#FFF0F5' });
+    wx.setNavigationBarColor({ frontColor: '#000000', backgroundColor: isBlue ? '#F0F5FF' : '#FFF0F5' });
+  },
+
+  toggleTheme(e) {
+    const t = e.currentTarget.dataset.theme;
+    this._applyTheme(t);
+    wx.setStorageSync('spendlens-theme', t);
   },
 
   onShareAppMessage() {
@@ -390,7 +414,8 @@ Page({
       progressPct: 5
     });
 
-    const url = app.globalData.apiBase + '/generate-ppt/' + this.data.cacheId;
+    const theme = app.globalData.theme || 'pink';
+    const url = app.globalData.apiBase + '/generate-ppt/' + this.data.cacheId + '?theme=' + theme;
 
     const dlPromise = downloadFileWithProgress(url, (progress) => {
       // 真实下载进度：服务器生成完后开始传输，映射到 10-100%
@@ -429,7 +454,8 @@ Page({
       progressPct: 5
     });
 
-    const url = app.globalData.apiBase + '/generate-pdf/' + this.data.cacheId;
+    const theme = app.globalData.theme || 'pink';
+    const url = app.globalData.apiBase + '/generate-pdf/' + this.data.cacheId + '?theme=' + theme;
 
     const dlPromise = downloadFileWithProgress(url, (progress) => {
       // 真实下载进度：服务器生成完后开始传输，映射到 10-100%

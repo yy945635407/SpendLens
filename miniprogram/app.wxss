@@ -19,23 +19,6 @@ page {
   min-height: 100vh;
 }
 
-/* Blue theme */
-.theme-blue page,
-page.theme-blue {
-  --primary: #5B8DEF;
-  --primary-light: #A8C8FF;
-  --glow: #C8DDFF;
-  --dark: #1E2A4A;
-  --text: #2A3550;
-  --muted: #90A4C4;
-  --positive: #5BC8A4;
-  --gold: #B8D4FF;
-  --bg: #F0F5FF;
-  --card-bg: rgba(255,255,255,0.65);
-  --card-border: rgba(91,141,239,0.08);
-  background: linear-gradient(135deg, #F0F5FF 0%, #E4ECFF 50%, #F5F8FF 100%);
-}
-
 .container { padding: 24rpx 32rpx 120rpx; }
 
 /* Logo */
@@ -50,23 +33,23 @@ page.theme-blue {
   font-weight: 600; transition: all 0.2s;
 }
 .btn-primary {
-  background: linear-gradient(135deg, #FF6B8A 0%, #FF85A2 100%);
-  color: #FFF; box-shadow: 0 8rpx 32rpx rgba(255,107,138,0.35);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #FFF; box-shadow: 0 8rpx 32rpx rgba(255,107,138,0.25);
 }
 .btn-primary[disabled] { background: #CCC; box-shadow: none; }
 .btn-secondary {
-  background: #FFF; color: var(--text); border: 2rpx solid #FFD4DF;
+  background: var(--card-bg); color: var(--text); border: 2rpx solid var(--glow);
 }
 .btn-small { padding: 12rpx 28rpx; font-size: 24rpx; border-radius: 16rpx; }
-.btn-danger { background: #FF6B8A; color: #FFF; }
+.btn-danger { background: var(--primary); color: #FFF; }
 .btn-row { display: flex; gap: 12rpx; justify-content: center; margin-top: 32rpx; }
 .btn-row .btn { flex: 1; min-width: 140rpx; max-width: 200rpx; padding: 20rpx 16rpx; font-size: 26rpx; white-space: nowrap; }
 
 /* 上传区 */
 .upload-zone {
-  border: 4rpx dashed #FFB3C6; border-radius: 40rpx; padding: 60rpx 40rpx;
-  text-align: center; background: #FFF; box-shadow: 0 4rpx 28rpx rgba(255,107,138,0.10);
-  margin-bottom: 32rpx;
+  border: 4rpx dashed var(--glow); border-radius: 40rpx; padding: 60rpx 40rpx;
+  text-align: center; background: var(--card-bg); backdrop-filter: blur(12rpx);
+  box-shadow: 0 4rpx 28rpx rgba(0,0,0,0.04); margin-bottom: 32rpx;
 }
 .upload-zone .icon { font-size: 72rpx; margin-bottom: 16rpx; }
 .upload-zone .title { font-size: 32rpx; color: var(--text); margin-bottom: 8rpx; }
@@ -75,14 +58,15 @@ page.theme-blue {
 /* 标签栏 */
 .tab-bar {
   display: flex; gap: 8rpx; margin-bottom: 32rpx; flex-wrap: wrap;
-  background: rgba(255,255,255,0.6); border-radius: 28rpx; padding: 8rpx;
+  background: rgba(255,255,255,0.5); backdrop-filter: blur(8rpx);
+  border-radius: 28rpx; padding: 8rpx;
 }
 .tab-btn {
   flex: 1; min-width: 120rpx; padding: 18rpx 12rpx; border: none;
   border-radius: 24rpx; font-size: 26rpx; font-weight: 600; text-align: center;
   background: transparent; color: var(--muted); transition: all 0.2s;
 }
-.tab-btn.active { background: var(--primary); color: #FFF; box-shadow: 0 8rpx 24rpx rgba(255,107,138,0.35); }
+.tab-btn.active { background: var(--primary); color: #FFF; }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
