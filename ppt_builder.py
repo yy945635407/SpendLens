@@ -311,7 +311,7 @@ def build_ppt(data, charts, theme='pink'):
             dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(hx), Inches(hy), Inches(0.15), Inches(0.15))
             dot.fill.solid(); dot.fill.fore_color.rgb = C['pink4']; dot.line.fill.background()
         # 标题
-        _add_text(slide, '🎀  ' + month + '  🎀', Inches(1), Inches(1.4), Inches(8), Inches(0.5),
+        _add_text(slide, month, Inches(1), Inches(1.4), Inches(8), Inches(0.5),
                   size=18, color=C['pink4'], align=PP_ALIGN.CENTER)
         _add_text(slide, 'SpendLens', Inches(0.5), Inches(2.0), Inches(9), Inches(0.9),
                   size=44, color=C['white'], bold=True, align=PP_ALIGN.CENTER)
@@ -321,7 +321,7 @@ def build_ppt(data, charts, theme='pink'):
         ribbon_bar.fill.solid(); ribbon_bar.fill.fore_color.rgb = C['pink3']; ribbon_bar.line.fill.background()
         _add_text(slide, 'iCost 智能记账  ·  让每一笔都清晰可见', Inches(1.5), Inches(3.5), Inches(7), Inches(0.4),
                   size=14, color=C['muted'], align=PP_ALIGN.CENTER)
-        _add_text(slide, 'YLYT FAMILY  ·  💖', Inches(0), Inches(5.1), Inches(10), Inches(0.25),
+        _add_text(slide, 'YLYT FAMILY', Inches(0), Inches(5.1), Inches(10), Inches(0.25),
                   size=9, color=C['muted'], align=PP_ALIGN.CENTER)
 
     # ================================================================
@@ -330,7 +330,7 @@ def build_ppt(data, charts, theme='pink'):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     bg = slide.background; bg.fill.solid(); bg.fill.fore_color.rgb = C['bg']
 
-    _add_text(slide, '📋 总体概况', Inches(0.6), Inches(0.25), Inches(6), Inches(0.5),
+    _add_text(slide, '总体概况', Inches(0.6), Inches(0.25), Inches(6), Inches(0.5),
               size=26, color=C['text'], bold=True)
     _add_text(slide, f'{month} 收支总览', Inches(0.6), Inches(0.7), Inches(6), Inches(0.25),
               size=11, color=C['muted'])
@@ -386,7 +386,7 @@ def build_ppt(data, charts, theme='pink'):
             h_color = _hex_to_rgb(h_color)
         _add_rect(slide, Inches(0.6), Inches(4.0), Inches(8.8), Inches(1.4), fill=C['card'], shadow=True,
                   accent=h_color)
-        _add_text(slide, '🌸 财务健康评分', Inches(0.9), Inches(4.1), Inches(2.5), Inches(0.25),
+        _add_text(slide, '财务健康评分', Inches(0.9), Inches(4.1), Inches(2.5), Inches(0.25),
                   size=11, color=C['muted'])
         _add_text(slide, f"{h['score']}分  {h['grade']}", Inches(0.9), Inches(4.35), Inches(2.5), Inches(0.45),
                   size=28, color=h_color, bold=True)
@@ -400,7 +400,7 @@ def build_ppt(data, charts, theme='pink'):
         _add_text(slide, '\n'.join(health_lines) if health_lines else '', Inches(5.6), Inches(4.1), Inches(3.6), Inches(1.1),
                   size=9, color=C['text'])
         if h.get('suggestions'):
-            _add_text(slide, '💡 ' + ' · '.join(h['suggestions'][:2]), Inches(0.9), Inches(4.85), Inches(8.0), Inches(0.35),
+            _add_text(slide, '· '.join(h['suggestions'][:2]), Inches(0.9), Inches(4.85), Inches(8.0), Inches(0.35),
                       size=9, color=C['muted'])
 
     # ================================================================
@@ -418,7 +418,7 @@ def build_ppt(data, charts, theme='pink'):
     total_exp = data['total_expense']
     insights = []
     for i, (cat_name, cat_amt) in enumerate(top3):
-        title = f'{"🔥" if i==0 else "🥈" if i==1 else "🥉"}  Top {i+1}: {cat_name}'
+        title = f'Top {i+1}: {cat_name}'
         pct = cat_amt / total_exp * 100
         desc = f'¥{cat_amt:,.2f} · 占比 {pct:.1f}%'
         insights.append((title, desc))
@@ -434,7 +434,7 @@ def build_ppt(data, charts, theme='pink'):
     # Spending structure analysis
     top1_pct = top3[0][1] / total_exp * 100 if top3 else 0
     cat_count = len(data['cat1_list'])
-    structure_analysis = f'📊 支出涵盖 {cat_count} 个类别'
+    structure_analysis = f'支出涵盖 {cat_count} 个类别'
     if top1_pct > 40:
         structure_analysis += f'，最大类别占比 {top1_pct:.0f}%，支出较为集中，可关注是否有优化空间'
     elif top1_pct > 25:
@@ -459,7 +459,7 @@ def build_ppt(data, charts, theme='pink'):
                w=Inches(5.0), max_h=Inches(4.2))
     _add_rect(slide, Inches(5.8), Inches(1.1), Inches(3.8), Inches(3.8), fill=C['card'], shadow=True)
 
-    _add_text(slide, '💡 餐饮分析', Inches(6.1), Inches(1.25), Inches(3.3), Inches(0.35),
+    _add_text(slide, '餐饮分析', Inches(6.1), Inches(1.25), Inches(3.3), Inches(0.35),
               size=15, color=C['text'], bold=True)
 
     food_lines = []
@@ -473,11 +473,11 @@ def build_ppt(data, charts, theme='pink'):
     cook_ratio = (food_cats.get('三餐', 0) + food_cats.get('做饭材料', 0)) / total_food * 100 if total_food > 0 else 0
     takeout_ratio = (food_cats.get('外卖', 0) + food_cats.get('零食', 0)) / total_food * 100 if total_food > 0 else 0
     if cook_ratio > 60:
-        food_lines.append(('✅ 以做饭为主，饮食结构健康', True, C['secondary']))
+        food_lines.append(('以做饭为主，饮食结构健康', True, C['secondary']))
     else:
-        food_lines.append(('⚠️ 外卖占比较高，多做饭更省钱', True, C['primary']))
-    food_lines.append((f'🍳 做饭占比 {cook_ratio:.0f}%  🛵 外卖零食 {takeout_ratio:.0f}%', False, C['muted']))
-    food_lines.append((f'📊 日均餐饮 ¥{data["daily_food"]:.2f}，月均餐饮 ¥{total_food/30:.2f}/天', False, C['muted']))
+        food_lines.append(('外卖占比较高，多做饭更省钱', True, C['primary']))
+    food_lines.append((f'做饭占比 {cook_ratio:.0f}%    外卖零食 {takeout_ratio:.0f}%', False, C['muted']))
+    food_lines.append((f'日均餐饮 ¥{data["daily_food"]:.2f}，月均餐饮 ¥{total_food/30:.2f}/天', False, C['muted']))
     _add_multiline(slide, food_lines, Inches(6.1), Inches(1.8), Inches(3.3), Inches(3.2), size=10)
 
     # ================================================================
@@ -511,9 +511,9 @@ def build_ppt(data, charts, theme='pink'):
     if len(wl) >= 2:
         sorted_weeks = sorted(wl, key=lambda x: x[1])
         low_week = sorted_weeks[0]
-        trend_analysis = f'📈 周间波动: {low_week[0]} 最低 ¥{low_week[1]:,.0f}'
+        trend_analysis = f'周间波动: {low_week[0]} 最低 ¥{low_week[1]:,.0f}'
         if peak_week[1] > weekly_avg * 1.5:
-            trend_analysis += '\n⚠️ 峰值周存在大额支出'
+            trend_analysis += '\n峰值周存在大额支出'
         _add_text(slide, trend_analysis, Inches(8.4), Inches(2.55), Inches(1.3), Inches(0.65),
                   size=8, color=C['muted'], align=PP_ALIGN.CENTER)
 
@@ -524,7 +524,7 @@ def build_ppt(data, charts, theme='pink'):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         bg = slide.background; bg.fill.solid(); bg.fill.fore_color.rgb = C['bg']
 
-        _add_text(slide, '📅 每日支出热力图', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
+        _add_text(slide, '每日支出热力图', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
                   size=28, color=C['text'], bold=True)
         _add_text(slide, f'{month} · 颜色越深，支出越高', Inches(0.6), Inches(0.85),
                   Inches(6), Inches(0.3), size=13, color=C['muted'])
@@ -538,7 +538,7 @@ def build_ppt(data, charts, theme='pink'):
                 max_day = max(days_with_spend, key=lambda x: x[1])
                 min_day = min(days_with_spend, key=lambda x: x[1])
                 _add_rect(slide, Inches(0.6), Inches(5.1), Inches(4.0), Inches(0.38), fill=C['card'], shadow=False)
-                _add_text(slide, f'🔥 最高日: {max_day[0]} ¥{max_day[1]:.0f}    ❄️ 最低日: {min_day[0]} ¥{min_day[1]:.0f}',
+                _add_text(slide, f'最高日: {max_day[0]} ¥{max_day[1]:.0f}    最低日: {min_day[0]} ¥{min_day[1]:.0f}',
                           Inches(0.8), Inches(5.1), Inches(3.8), Inches(0.38), size=11, color=C['text'])
 
     # ================================================================
@@ -570,9 +570,9 @@ def build_ppt(data, charts, theme='pink'):
     # Account analysis
     if len(data['account_list']) >= 2:
         top_acc = data['account_list'][0]
-        acc_analysis = f'💳 {top_acc[0]} 承担了 {top_acc[1]/data["total_expense"]*100:.1f}% 的家庭支出，为最主要支付渠道'
+        acc_analysis = f'{top_acc[0]} 承担了 {top_acc[1]/data["total_expense"]*100:.1f}% 的家庭支出，为最主要支付渠道'
         if len(data['account_list']) >= 3:
-            acc_analysis += f'\n📊 共使用 {len(data["account_list"])} 个账户，支付方式多样化'
+            acc_analysis += f'\n共使用 {len(data["account_list"])} 个账户，支付方式多样化'
         _add_text(slide, acc_analysis, Inches(6.8), Inches(4.8), Inches(2.9), Inches(0.6),
                   size=10, color=C['text'])
 
@@ -624,11 +624,11 @@ def build_ppt(data, charts, theme='pink'):
 
     # Income diversity analysis
     if inc_count >= 3:
-        inc_analysis = f'✅ 收入来源 {inc_count} 个，多元化良好'
+        inc_analysis = f'收入来源 {inc_count} 个，多元化良好'
     elif inc_count >= 2:
-        inc_analysis = f'💡 收入来源 {inc_count} 个，基本多元'
+        inc_analysis = f'收入来源 {inc_count} 个，基本多元'
     else:
-        inc_analysis = f'⚠️ 收入来源单一，建议开拓副业'
+        inc_analysis = f'收入来源单一，建议开拓副业'
     inc_analysis += f' | 结余 ¥{data["balance"]:,.0f}'
     _add_text(slide, inc_analysis, Inches(4.7), Inches(5.0), Inches(4.5), Inches(0.25),
               size=9, color=C['text'])
@@ -641,7 +641,7 @@ def build_ppt(data, charts, theme='pink'):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         bg = slide.background; bg.fill.solid(); bg.fill.fore_color.rgb = C['bg']
 
-        _add_text(slide, '💸 预算 vs 实际', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
+        _add_text(slide, '预算 vs 实际', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
                   size=28, color=C['text'], bold=True)
 
         if bc.get('total_pct') is not None:
@@ -720,9 +720,9 @@ def build_ppt(data, charts, theme='pink'):
         # 粉色蝴蝶结甜美总结：深色底 + 缎带
         bg.fill.fore_color.rgb = C['darkBg']
         _add_ribbon(slide, Inches(0), Inches(0), Inches(10), Inches(0.06), color=C['primary'])
-        _add_text(slide, '🎀 总结 & 建议', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
+        _add_text(slide, '总结 & 建议', Inches(0.6), Inches(0.3), Inches(6), Inches(0.55),
                   size=28, color=C['white'], bold=True)
-        _add_text(slide, f'{month} · 财务健康度评估 💖', Inches(0.6), Inches(0.85), Inches(6), Inches(0.3),
+        _add_text(slide, f'{month} · 财务健康度评估', Inches(0.6), Inches(0.85), Inches(6), Inches(0.3),
                   size=13, color=C['pink4'])
 
     # Build smart conclusions from data
@@ -731,14 +731,14 @@ def build_ppt(data, charts, theme='pink'):
     # 1. Savings rate analysis
     sr = data['savings_rate']
     if sr >= 60:
-        conclusions.append(('💰', f'储蓄率 {sr}%，财务状态非常优秀',
-            f'远高于推荐的30%储蓄率，月存 ¥{data["balance"]:,.0f}，财富积累能力卓越，可考虑将结余资金进行稳健理财 💖'))
+        conclusions.append(('', f'储蓄率 {sr}%，财务状态非常优秀',
+            f'远高于推荐的30%储蓄率，月存 ¥{data["balance"]:,.0f}，财富积累能力卓越，可考虑将结余资金进行稳健理财'))
     elif sr >= 40:
-        conclusions.append(('💰', f'储蓄率 {sr}%，财务状态健康',
-            f'已达推荐的储蓄水平，月存 ¥{data["balance"]:,.0f}，继续保持即可稳步积累财富 ✨'))
+        conclusions.append(('', f'储蓄率 {sr}%，财务状态健康',
+            f'已达推荐的储蓄水平，月存 ¥{data["balance"]:,.0f}，继续保持即可稳步积累财富'))
     else:
-        conclusions.append(('💰', f'储蓄率 {sr}%，有提升空间',
-            f'当前月存 ¥{data["balance"]:,.0f}，建议设定月度存款目标逐步提高储蓄率 📈'))
+        conclusions.append(('', f'储蓄率 {sr}%，有提升空间',
+            f'当前月存 ¥{data["balance"]:,.0f}，建议设定月度存款目标逐步提高储蓄率'))
 
     # 2. Food structure
     food_cats = {c[0]: c[1] for c in data['food_list']}
@@ -746,42 +746,42 @@ def build_ppt(data, charts, theme='pink'):
     total_food = sum(f[1] for f in data['food_list']) or 1
     cook_ratio = cook_amt / total_food * 100
     if cook_ratio > 60:
-        conclusions.append(('🍳', f'餐饮结构健康（做饭占{cook_ratio:.0f}%）',
-            f'以三餐和做饭材料为主，日均餐饮仅 ¥{data["daily_food"]:.2f}，饮食习惯良好，既健康又省钱 ✨'))
+        conclusions.append(('', f'餐饮结构健康（做饭占{cook_ratio:.0f}%）',
+            f'以三餐和做饭材料为主，日均餐饮仅 ¥{data["daily_food"]:.2f}，饮食习惯良好，既健康又省钱'))
     else:
-        conclusions.append(('🍳', f'餐饮中外卖占比{100-cook_ratio:.0f}%，可优化',
-            f'日均餐饮 ¥{data["daily_food"]:.2f}，多做饭可有效降低餐饮支出 🍳'))
+        conclusions.append(('', f'餐饮中外卖占比{100-cook_ratio:.0f}%，可优化',
+            f'日均餐饮 ¥{data["daily_food"]:.2f}，多做饭可有效降低餐饮支出'))
 
     # 3. Spending concentration
     top1 = data['cat1_list'][0] if data['cat1_list'] else ('无', 0)
     top1_pct = top1[1] / data['total_expense'] * 100 if data['total_expense'] > 0 else 0
     if top1_pct > 40:
-        conclusions.append(('📊', f'最大支出类别「{top1[0]}」占{top1_pct:.1f}%',
-            f'支出较为集中，可分析该类支出中是否有可压缩的非刚性消费 🔍'))
+        conclusions.append(('', f'最大支出类别「{top1[0]}」占{top1_pct:.1f}%',
+            f'支出较为集中，可分析该类支出中是否有可压缩的非刚性消费'))
     else:
-        conclusions.append(('📊', f'最大支出类别「{top1[0]}」仅占{top1_pct:.1f}%',
-            f'支出结构分散健康，没有单一类别占比过高，消费习惯良好 🎯'))
+        conclusions.append(('', f'最大支出类别「{top1[0]}」仅占{top1_pct:.1f}%',
+            f'支出结构分散健康，没有单一类别占比过高，消费习惯良好'))
 
     # 4. Essential vs discretionary
     essential_cats = ['餐饮', '住房', '交通', '通讯', '社保医保']
     essential_amt = sum(c[1] for c in data['cat1_list'] if c[0] in essential_cats)
     essential_pct = essential_amt / data['total_expense'] * 100 if data['total_expense'] > 0 else 0
     discretionary = data['total_expense'] - essential_amt
-    conclusions.append(('🎯', f'刚性支出占{essential_pct:.0f}%，弹性支出 ¥{discretionary:,.0f}',
-        f'扣除刚性支出后，可自由支配金额为 ¥{discretionary:,.0f}，消费克制有度 🍰'))
+    conclusions.append(('', f'刚性支出占{essential_pct:.0f}%，弹性支出 ¥{discretionary:,.0f}',
+        f'扣除刚性支出后，可自由支配金额为 ¥{discretionary:,.0f}，消费克制有度'))
 
     # 5. Weekly pattern
     wl = data['weekly_list']
     if len(wl) >= 2:
         peak_week = max(wl, key=lambda x: x[1])
         low_week = min(wl, key=lambda x: x[1])
-        conclusions.append(('📅', f'支出峰值在{peak_week[0]}（¥{peak_week[1]:,.0f}），低谷在{low_week[0]}（¥{low_week[1]:,.0f}）',
+        conclusions.append(('', f'支出峰值在{peak_week[0]}（¥{peak_week[1]:,.0f}），低谷在{low_week[0]}（¥{low_week[1]:,.0f}）',
             f'周间支出有波动属正常现象，关注峰值周是否包含可延后的非必要支出 💕'))
 
     # 6. Health score summary
     if data.get('health'):
         h = data['health']
-        conclusions.append(('🌸', f'财务健康评分 {h["score"]} 分 · {h["grade"]} · {h["grade_text"]}',
+        conclusions.append(('', f'财务健康评分 {h["score"]} 分 · {h["grade"]} · {h["grade_text"]}',
             f'综合储蓄率、支出结构、收入多样性和消费稳定性评估，财务状态{h["grade_text"]} 💖'))
 
     # 动态间距：根据结论数量自适应
@@ -798,7 +798,7 @@ def build_ppt(data, charts, theme='pink'):
         cy = summary_start + i * item_spacing
         title_color = C['white'] if theme != 'blue' else C['text']
         desc_color = C['muted'] if theme != 'blue' else C['muted']
-        _add_text(slide, icon + '  ' + title, Inches(0.8), cy, Inches(8.8), title_h,
+        _add_text(slide, title, Inches(0.8), cy, Inches(8.8), title_h,
                   size=title_size, color=title_color, bold=True)
         _add_text(slide, desc, Inches(0.8), cy + title_h, Inches(8.8), desc_h,
                   size=desc_size, color=desc_color)

@@ -82,13 +82,11 @@ Page({
     const vars = isBlue
       ? '--primary:#5B8DEF;--primary-light:#A8C8FF;--glow:#C8DDFF;--dark:#1E2A4A;--text:#2A3550;--muted:#90A4C4;--positive:#5BC8A4;--gold:#B8D4FF;--bg:#F0F5FF;--card-bg:rgba(255,255,255,0.65);--card-border:rgba(91,141,239,0.08);'
       : '--primary:#FF6B8A;--primary-light:#FFB3C6;--glow:#FFD4DF;--dark:#5C2D3E;--text:#3D1E2A;--muted:#C4909E;--positive:#7BC8A4;--gold:#FFD4B8;--bg:#FFF0F5;--card-bg:rgba(255,255,255,0.65);--card-border:rgba(255,107,138,0.08);';
-    const bg = isBlue
-      ? 'background:linear-gradient(135deg,#F0F5FF,#E4ECFF,#F5F8FF);'
-      : 'background:linear-gradient(135deg,#FFF0F5,#FFE4EC,#FFF5F8);';
-    this.setData({ theme: t, containerStyle: vars + bg });
+    this.setData({ theme: t, containerStyle: vars });
     app.globalData.theme = t;
-    wx.setBackgroundColor({ backgroundColor: isBlue ? '#F0F5FF' : '#FFF0F5', backgroundColorTop: isBlue ? '#F0F5FF' : '#FFF0F5' });
-    wx.setNavigationBarColor({ frontColor: '#000000', backgroundColor: isBlue ? '#F0F5FF' : '#FFF0F5' });
+    const bg = isBlue ? '#F0F5FF' : '#FFF0F5';
+    wx.setBackgroundColor({ backgroundColor: bg, backgroundColorTop: bg });
+    wx.setNavigationBarColor({ frontColor: '#000000', backgroundColor: bg });
   },
 
   toggleTheme(e) {
@@ -228,8 +226,9 @@ Page({
       chartBudgetUrl: 'budget_bar',
       chartScoreUrl: 'score_ring',
     };
+    const theme = app.globalData.theme || 'pink';
     for (const [key, name] of Object.entries(charts)) {
-      this.setData({ [key]: `${apiBase}/chart/${cacheId}/${name}` });
+      this.setData({ [key]: `${apiBase}/chart/${cacheId}/${name}?theme=${theme}` });
     }
   },
 

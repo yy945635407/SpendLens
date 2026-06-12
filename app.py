@@ -10,7 +10,7 @@ from flask_cors import CORS
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from analyzer import analyze, compare
-from charts import all_charts, heatmap_daily, bar_budget_vs_actual, bar_compare_monthly
+from charts import all_charts, heatmap_daily, bar_budget_vs_actual, bar_compare_monthly, set_theme
 from ppt_builder import build_ppt
 from budget import (
     health_score, load_budget, save_budget, compare_budget,
@@ -90,15 +90,17 @@ def chart_image(cache_id, chart_name):
         return jsonify({'error': f'未知图表类型: {chart_name}'}), 400
 
     try:
-        buf = _generate_single_chart(data, chart_name)
+        theme = request.args.get('theme', 'pink')
+        buf = _generate_single_chart(data, chart_name, theme=theme)
         return send_file(buf, mimetype='image/png')
     except Exception as e:
         return jsonify({'error': f'图表生成失败: {str(e)}'}), 500
 
 
-def _generate_single_chart(data, name):
+def _generate_single_chart(data, name, theme='pink'):
     """生成单个图表，返回 BytesIO。"""
     from io import BytesIO
+    set_theme(theme)
     budget_cfg = load_budget()
 
     if name == 'pie_spending':
@@ -193,11 +195,12 @@ def generate_route():
         # 附加评分和预算
         data['health'] = health_score(data)
         data['budget_comparison'] = compare_budget(data, load_budget())
+        theme = request.form.get('theme', 'pink')
+        set_theme(theme)
         charts = all_charts(data)
         # 附加新图表
         charts['heatmap'] = heatmap_daily(data['daily_list'])
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], load_budget())
-        theme = request.form.get('theme', 'pink')
         ppt_buf = build_ppt(data, charts, theme=theme)
         os.unlink(tmp_path)
 
@@ -316,11 +319,12 @@ def generate_ppt_from_cache(cache_id):
         return jsonify({'error': '缓存已过期，请重新上传文件'}), 404
 
     try:
+        theme = request.args.get('theme', 'pink')
+        set_theme(theme)
         charts = all_charts(data)
         charts['heatmap'] = heatmap_daily(data['daily_list'])
         budget_cfg = load_budget()
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], budget_cfg)
-        theme = request.args.get('theme', 'pink')
         ppt_buf = build_ppt(data, charts, theme=theme)
 
         filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pptx"
@@ -342,13 +346,14 @@ def generate_pdf_from_cache(cache_id):
         return jsonify({'error': '缓存已过期，请重新上传文件'}), 404
 
     try:
+        theme = request.args.get('theme', 'pink')
+        set_theme(theme)
         charts = all_charts(data)
         charts['heatmap'] = heatmap_daily(data['daily_list'])
         budget_cfg = load_budget()
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], budget_cfg)
 
         from pdf_builder import build_pdf
-        theme = request.args.get('theme', 'pink')
         pdf_buf = build_pdf(data, charts, theme=theme)
 
         filename = f"SpendLens_{data['month'].replace('年','').replace('月','')}.pdf"
@@ -381,12 +386,13 @@ def generate_pdf_route():
         data = analyze(tmp_path)
         data['health'] = health_score(data)
         data['budget_comparison'] = compare_budget(data, load_budget())
+        theme = request.form.get('theme', 'pink')
+        set_theme(theme)
         charts = all_charts(data)
         charts['heatmap'] = heatmap_daily(data['daily_list'])
         charts['budget_bar'] = bar_budget_vs_actual(data['cat1_list'], load_budget())
 
         from pdf_builder import build_pdf
-        theme = request.form.get('theme', 'pink')
         pdf_buf = build_pdf(data, charts, theme=theme)
         os.unlink(tmp_path)
 

@@ -515,9 +515,13 @@
   <!-- Upload -->
   <div class="upload-zone section-block" id="uploadZone">
     <span class="upload-icon icon">
-      <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="icon-folder" width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M6 10C6 8 7.5 6.5 9.5 6.5H18L21.5 10.5H38.5C40.5 10.5 42 12 42 14V36C42 38.5 40.5 40 38.5 40H9.5C7 40 6 38.5 6 36V10Z" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <path d="M6 16H42" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 2"/>
+      </svg>
+      <svg class="icon-check" width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <circle cx="24" cy="24" r="20" stroke="var(--positive)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 1.5" fill="none"/>
+        <path d="M14 24L21 31L34 18" stroke="var(--positive)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
       </svg>
     </span>
     <h3>导入 iCost 账单文件</h3>
@@ -525,7 +529,7 @@
     <div class="upload-hint">
       <span>.xlsx</span> <span style="opacity:0.4;">/</span> <span>.xls</span>
     </div>
-    <p style="font-size:10px;color:var(--muted);margin-top:8px;font-weight:300;">⚠️ 请上传各记账软件导出的账单文件，并非银行流水单</p>
+    <p style="font-size:10px;color:var(--muted);margin-top:8px;font-weight:300;">请上传各记账软件导出的账单文件，并非银行流水单</p>
     <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
     <input type="file" id="compareInput" accept=".xlsx,.xls" hidden>
   </div>
@@ -541,8 +545,8 @@
     <div class="loading-text">正在生成报告…</div>
     <div class="loading-sub">10 — 15 seconds</div>
     <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.04);font-size:11px;color:var(--muted);line-height:1.7;font-weight:300;">
-      💡 如等待时间过长，可能是网络问题，请耐心等待<br>
-      💡 如生成文件有格式遮挡，请重新生成试试
+      如等待时间过长，可能是网络问题，请耐心等待<br>
+      如生成文件有格式遮挡，请重新生成试试
     </div>
   </div>
 
@@ -669,7 +673,7 @@
 <!-- Detail Modal -->
 <div class="modal-overlay hidden" id="detailModal">
   <div class="modal-card">
-    <button class="modal-close" onclick="closeDetail()">✕</button>
+    <button class="modal-close" onclick="closeDetail()">×</button>
     <div class="modal-title" id="detailTitle"></div>
     <div class="modal-subtitle" id="detailSubtitle"></div>
     <div id="detailContent"></div>
@@ -700,7 +704,8 @@
     if (!file.name.match(/\.(xlsx|xls)$/i)) { showToast('请上传 .xlsx 或 .xls 文件', true); return; }
     uploadedFile = file;
     uploadZone.classList.add('has-file');
-    uploadZone.querySelector('.icon').textContent = '✅';
+    uploadZone.querySelector('.icon-folder').style.display = 'none';
+    uploadZone.querySelector('.icon-check').style.display = '';
     uploadZone.querySelector('h3').textContent = file.name;
     uploadZone.querySelector('p').textContent = `${(file.size/1024).toFixed(1)} KB · 点击更换`;
     runAnalysis(file);
@@ -988,7 +993,8 @@
     $('preview').classList.remove('active'); $('loading').classList.remove('active');
     $('genLoading').classList.remove('active'); $('tabBar').classList.remove('active');
     uploadZone.classList.remove('has-file');
-    uploadZone.querySelector('.icon').textContent = '📁';
+    uploadZone.querySelector('.icon-folder').style.display = '';
+    uploadZone.querySelector('.icon-check').style.display = 'none';
     uploadZone.querySelector('h3').textContent = '导入 iCost 账单文件';
     uploadZone.querySelector('p').textContent = '拖拽到此处，或点击选择文件';
     fileInput.value = '';

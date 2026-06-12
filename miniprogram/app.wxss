@@ -1,6 +1,5 @@
 /* SpendLens 全局样式 — makemepulse-inspired 双主题 */
 page {
-  /* Pink theme (default) */
   --primary: #FF6B8A;
   --primary-light: #FFB3C6;
   --glow: #FFD4DF;
@@ -13,9 +12,14 @@ page {
   --card-bg: rgba(255,255,255,0.65);
   --card-border: rgba(255,107,138,0.08);
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
-  background: linear-gradient(135deg, #FFF0F5 0%, #FFE4EC 50%, #FFF5F8 100%);
+  background: #FFF0F5;
   color: var(--text);
   font-size: 28rpx;
+  min-height: 100vh;
+}
+
+.container {
+  padding: 24rpx 32rpx 120rpx;
   min-height: 100vh;
 }
 
